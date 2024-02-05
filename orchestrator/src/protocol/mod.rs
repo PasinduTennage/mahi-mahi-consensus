@@ -3,16 +3,16 @@
 
 use std::path::PathBuf;
 
-use crate::{
-    benchmark::{BenchmarkParameters, BenchmarkType},
-    client::Instance,
-};
+use crate::{benchmark::BenchmarkParameters, client::Instance};
 
 pub mod mysticeti;
 
+pub const CARGO_FLAGS: &str = "--release";
+pub const RUST_FLAGS: &str = "RUSTFLAGS=-C\\ target-cpu=native";
+
 /// The minimum interface that the protocol should implement to allow benchmarks from
 /// the orchestrator.
-pub trait ProtocolCommands<T: BenchmarkType> {
+pub trait ProtocolCommands<T> {
     /// The list of dependencies to install (e.g., through apt-get).
     fn protocol_dependencies(&self) -> Vec<&'static str>;
 

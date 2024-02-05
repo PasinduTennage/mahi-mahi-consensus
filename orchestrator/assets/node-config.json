@@ -1,0 +1,6 @@
+{
+  "consensus_only": true,
+  "benchmark_transaction_size": 512,
+  "disable_pipeline": false,
+  "number_of_leaders": 2
+}

@@ -35,7 +35,7 @@ pub struct Identifier {
     pub metrics_address: SocketAddr,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Parameters {
     pub identifiers: Vec<Identifier>,
     pub wave_length: RoundNumber,
@@ -44,6 +44,9 @@ pub struct Parameters {
     pub shutdown_grace_period: Duration,
     pub number_of_leaders: usize,
     pub enable_pipelining: bool,
+    pub consensus_only: bool,
+    /// The size of the transactions to use in benchmarks.
+    pub benchmark_transaction_size: usize,
 }
 
 impl Default for Parameters {
@@ -56,6 +59,8 @@ impl Default for Parameters {
             shutdown_grace_period: Self::DEFAULT_SHUTDOWN_GRACE_PERIOD,
             number_of_leaders: Self::DEFAULT_NUMBER_OF_LEADERS,
             enable_pipelining: true,
+            consensus_only: true,
+            benchmark_transaction_size: Self::BENCHMARK_TRANSACTION_SIZE,
         }
     }
 }
@@ -67,6 +72,7 @@ impl Parameters {
     pub const DEFAULT_LEADER_TIMEOUT: Duration = Duration::from_secs(2);
 
     pub const BENCHMARK_PORT_OFFSET: u16 = 1500;
+    pub const BENCHMARK_TRANSACTION_SIZE: usize = 512;
 
     // needs to be sufficiently long to run benchmarks
     pub const DEFAULT_ROUNDS_IN_EPOCH: u64 = 3_600_000;

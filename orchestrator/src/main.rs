@@ -10,7 +10,7 @@ use eyre::{eyre, Context, Result};
 use faults::FaultsType;
 use measurement::MeasurementsCollection;
 use orchestrator::Orchestrator;
-use protocol::mysticeti::{MysticetiBenchmarkType, MysticetiProtocol};
+use protocol::mysticeti::{MysticetiNodeConfig, MysticetiProtocol};
 use settings::{CloudProvider, Settings};
 use ssh::SshConnectionManager;
 use testbed::Testbed;
@@ -31,7 +31,7 @@ pub mod testbed;
 
 /// NOTE: Link these types to the correct protocol.
 type Protocol = MysticetiProtocol;
-type BenchmarkType = MysticetiBenchmarkType;
+type NodeConfig = MysticetiNodeConfig;
 
 #[derive(Parser)]
 #[command(author, version, about = "Testbed orchestrator", long_about = None)]
@@ -61,9 +61,14 @@ pub enum Operation {
 
     /// Run a benchmark on the specified testbed.
     Benchmark {
-        /// Transaction size in bytes.
-        #[clap(long, default_value = "", global = true)]
-        benchmark_type: String,
+        /// The node's parameters.
+        #[clap(
+            long,
+            value_name = "FILE",
+            default_value = "orchestrator/assets/node-config.json",
+            global = true
+        )]
+        node_config: String,
 
         /// The committee size to deploy.
         #[clap(long, value_name = "INT")]
@@ -258,7 +263,7 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
 
         // Run benchmarks.
         Operation::Benchmark {
-            benchmark_type,
+            node_config,
             committee,
             faults,
             crash_recovery,
@@ -289,7 +294,7 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
                 .wrap_err("Failed to load testbed setup commands")?;
 
             let protocol_commands = Protocol::new(&settings);
-            let sui_benchmark_type = BenchmarkType::from_str(&benchmark_type)
+            let sui_node_config = NodeConfig::from_str(&node_config)
                 .map_err(|e| eyre!(e))
                 .wrap_err("Failed to parse benchmark parameters")?;
 
@@ -317,7 +322,7 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
             };
 
             let generator = BenchmarkParametersGenerator::new(committee, load)
-                .with_benchmark_type(sui_benchmark_type)
+                .with_node_config(sui_node_config)
                 .with_custom_duration(duration)
                 .with_faults(fault_type);
 
@@ -342,7 +347,7 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
 
         // Print a summary of the specified measurements collection.
         Operation::Summarize { path } => {
-            MeasurementsCollection::<BenchmarkType>::load(path)?.display_summary()
+            MeasurementsCollection::<NodeConfig>::load(path)?.display_summary()
         }
     }
     Ok(())

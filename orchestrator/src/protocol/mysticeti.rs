@@ -4,7 +4,9 @@
 use std::{
     env,
     fmt::{Debug, Display},
+    fs,
     net::IpAddr,
+    ops::Deref,
     path::PathBuf,
     str::FromStr,
 };
@@ -17,91 +19,78 @@ use mysticeti_core::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    benchmark::{BenchmarkParameters, BenchmarkType},
+    benchmark::{BenchmarkParameters, NodeConfig},
     client::Instance,
+    error::SettingsError,
     settings::Settings,
 };
 
-use super::{ProtocolCommands, ProtocolMetrics};
-
-const CARGO_FLAGS: &str = "--release";
-const RUST_FLAGS: &str = "RUSTFLAGS=-C\\ target-cpu=native";
+use super::{ProtocolCommands, ProtocolMetrics, CARGO_FLAGS, RUST_FLAGS};
 
 /// The type of benchmarks supported by Mysticeti.
-/// Note that all transactions are interpreted as both owned and shared.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct MysticetiBenchmarkType {
-    /// The transaction size in bytes.
-    transaction_size: usize,
-    /// Consensus only mode.
-    consensus_only: bool,
-    /// Whether to disable the pipeline within the universal committer.
-    disable_pipeline: bool,
-    /// The number of leaders to use.
-    number_of_leaders: usize,
-}
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct MysticetiNodeConfig(Parameters);
 
-impl Default for MysticetiBenchmarkType {
-    fn default() -> Self {
-        Self {
-            transaction_size: 512,
-            consensus_only: false,
-            disable_pipeline: false,
-            number_of_leaders: 2,
-        }
+impl Deref for MysticetiNodeConfig {
+    type Target = Parameters;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl Debug for MysticetiBenchmarkType {
+impl Debug for MysticetiNodeConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.transaction_size)
+        write!(f, "{}", self.benchmark_transaction_size)
     }
 }
 
-impl Display for MysticetiBenchmarkType {
+impl Display for MysticetiNodeConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let consensus_only = if self.consensus_only {
             " (consensus-only)"
         } else {
             ""
         };
-        write!(f, "{}B transactions{consensus_only}", self.transaction_size)
+        write!(
+            f,
+            "{}B transactions{consensus_only}",
+            self.benchmark_transaction_size
+        )
     }
 }
 
-impl FromStr for MysticetiBenchmarkType {
-    type Err = String;
+impl FromStr for MysticetiNodeConfig {
+    type Err = SettingsError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            return Ok(Self::default());
-        }
+        let reader = || -> Result<Self, std::io::Error> {
+            let data = fs::read(s)?;
+            let settings: MysticetiNodeConfig = serde_json::from_slice(&data)?;
+            Ok(settings)
+        };
 
-        let parameters = s.split("-").collect::<Vec<_>>();
-        Ok(Self {
-            transaction_size: parameters[0].parse::<usize>().map_err(|e| e.to_string())?,
-            consensus_only: parameters[1].parse::<bool>().map_err(|e| e.to_string())?,
-            disable_pipeline: parameters[2].parse::<bool>().map_err(|e| e.to_string())?,
-            number_of_leaders: parameters[3].parse::<usize>().map_err(|e| e.to_string())?,
+        reader().map_err(|e| SettingsError::InvalidSettings {
+            file: s.to_string(),
+            message: e.to_string(),
         })
     }
 }
 
-impl BenchmarkType for MysticetiBenchmarkType {}
+impl NodeConfig for MysticetiNodeConfig {}
 
 /// All configurations information to run a Mysticeti client or validator.
 pub struct MysticetiProtocol {
     working_dir: PathBuf,
 }
 
-impl ProtocolCommands<MysticetiBenchmarkType> for MysticetiProtocol {
+impl ProtocolCommands<MysticetiNodeConfig> for MysticetiProtocol {
     fn protocol_dependencies(&self) -> Vec<&'static str> {
         vec![]
     }
 
     fn db_directories(&self) -> Vec<PathBuf> {
-        let storage = self.working_dir.join("private/val-*/*");
-        vec![storage]
+        vec![self.working_dir.join("private/val-*/*")]
     }
 
     fn cleanup_commands(&self) -> Vec<String> {
@@ -111,7 +100,7 @@ impl ProtocolCommands<MysticetiBenchmarkType> for MysticetiProtocol {
     fn genesis_command<'a, I>(
         &self,
         instances: I,
-        parameters: &BenchmarkParameters<MysticetiBenchmarkType>,
+        parameters: &BenchmarkParameters<MysticetiNodeConfig>,
     ) -> String
     where
         I: Iterator<Item = &'a Instance>,
@@ -122,17 +111,17 @@ impl ProtocolCommands<MysticetiBenchmarkType> for MysticetiProtocol {
             .join(" ");
         let working_directory = self.working_dir.display();
 
-        let disable_pipeline = if parameters.benchmark_type.disable_pipeline {
-            "--disable-pipeline"
+        let enable_pipeline = if parameters.node_config.enable_pipelining {
+            "--enable-pipeline"
         } else {
             ""
         };
-        let number_of_leaders = parameters.benchmark_type.number_of_leaders;
+        let number_of_leaders = parameters.node_config.number_of_leaders;
 
         let genesis = [
             &format!("{RUST_FLAGS} cargo run {CARGO_FLAGS} --bin mysticeti --"),
             "benchmark-genesis",
-            &format!("--ips {ips} --working-directory {working_directory} {disable_pipeline} --number-of-leaders {number_of_leaders}"),
+            &format!("--ips {ips} --working-directory {working_directory} {enable_pipeline} --number-of-leaders {number_of_leaders}"),
         ]
         .join(" ");
 
@@ -157,7 +146,7 @@ impl ProtocolCommands<MysticetiBenchmarkType> for MysticetiProtocol {
     fn node_command<I>(
         &self,
         instances: I,
-        parameters: &BenchmarkParameters<MysticetiBenchmarkType>,
+        parameters: &BenchmarkParameters<MysticetiNodeConfig>,
     ) -> Vec<(Instance, String)>
     where
         I: IntoIterator<Item = Instance>,
@@ -199,8 +188,8 @@ impl ProtocolCommands<MysticetiBenchmarkType> for MysticetiProtocol {
                 ]
                 .join(" ");
                 let tps = format!("export TPS={}", parameters.load / parameters.nodes);
-                let tx_size = format!("export TRANSACTION_SIZE={}", parameters.benchmark_type.transaction_size);
-                let consensus_only = if parameters.benchmark_type.consensus_only {
+                let tx_size = format!("export TRANSACTION_SIZE={}", parameters.node_config.benchmark_transaction_size);
+                let consensus_only = if parameters.node_config.consensus_only {
                     format!("export CONSENSUS_ONLY={}", 1)
                 } else {
                     "".to_string()
@@ -217,7 +206,7 @@ impl ProtocolCommands<MysticetiBenchmarkType> for MysticetiProtocol {
     fn client_command<I>(
         &self,
         _instances: I,
-        _parameters: &BenchmarkParameters<MysticetiBenchmarkType>,
+        _parameters: &BenchmarkParameters<MysticetiNodeConfig>,
     ) -> Vec<(Instance, String)>
     where
         I: IntoIterator<Item = Instance>,

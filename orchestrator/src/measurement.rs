@@ -3,6 +3,7 @@
 
 use std::{
     collections::HashMap,
+    fmt::Debug,
     fs,
     io::BufRead,
     path::{Path, PathBuf},
@@ -14,7 +15,7 @@ use prometheus_parse::Scrape;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    benchmark::{BenchmarkParameters, BenchmarkType},
+    benchmark::{BenchmarkParameters, NodeConfig},
     display,
     protocol::ProtocolMetrics,
     settings::Settings,
@@ -171,7 +172,7 @@ pub struct MeasurementsCollection<T> {
     pub data: HashMap<Label, HashMap<ScraperId, Vec<Measurement>>>,
 }
 
-impl<T: BenchmarkType> MeasurementsCollection<T> {
+impl<T: NodeConfig> MeasurementsCollection<T> {
     /// Create a new (empty) collection of measurements.
     pub fn new(settings: &Settings, parameters: BenchmarkParameters<T>) -> Self {
         Self {
@@ -287,7 +288,7 @@ impl<T: BenchmarkType> MeasurementsCollection<T> {
         let duration = self.benchmark_duration();
 
         table.set_titles(row![bH2->"Benchmark Summary"]);
-        table.add_row(row![b->"Benchmark type:", self.parameters.benchmark_type]);
+        table.add_row(row![b->"Benchmark type:", self.parameters.node_config]);
         table.add_row(row![bH2->""]);
         table.add_row(row![b->"Nodes:", self.parameters.nodes]);
         table.add_row(row![b->"Faults:", self.parameters.faults]);
@@ -319,7 +320,7 @@ mod test {
     use std::{collections::HashMap, time::Duration};
 
     use crate::{
-        benchmark::test::TestBenchmarkType, protocol::test_protocol_metrics::TestProtocolMetrics,
+        benchmark::test::TestNodeConfig, protocol::test_protocol_metrics::TestProtocolMetrics,
         settings::Settings,
     };
 
@@ -413,7 +414,7 @@ mod test {
 
         let measurements = Measurement::from_prometheus::<TestProtocolMetrics>(report);
         let settings = Settings::new_for_test();
-        let mut aggregator = MeasurementsCollection::<TestBenchmarkType>::new(
+        let mut aggregator = MeasurementsCollection::<TestNodeConfig>::new(
             &settings,
             BenchmarkParameters::default(),
         );

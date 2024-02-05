@@ -107,7 +107,7 @@ impl Settings {
     {
         let reader = || -> Result<Self, std::io::Error> {
             let data = fs::read(path.clone())?;
-            let data = resolve_env(std::str::from_utf8(&data).unwrap());
+            let data = Self::resolve_env(&path, std::str::from_utf8(&data).unwrap())?;
             let settings: Settings = serde_json::from_slice(data.as_bytes())?;
 
             fs::create_dir_all(&settings.results_dir)?;
@@ -120,6 +120,25 @@ impl Settings {
             file: path.to_string(),
             message: e.to_string(),
         })
+    }
+
+    // Resolves ${ENV} into it's value for each env variable.
+    fn resolve_env<P>(path: P, s: &str) -> Result<String, std::io::Error>
+    where
+        P: AsRef<Path> + Display + Clone,
+    {
+        let mut s = s.to_string();
+        for (name, value) in env::vars() {
+            s = s.replace(&format!("${{{}}}", name), &value);
+        }
+        if s.contains("${") {
+            let error = SettingsError::InvalidSettings {
+                file: path.to_string(),
+                message: format!("Unresolved env variables {s} in the settings file"),
+            };
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, error));
+        }
+        Ok(s)
     }
 
     /// Get the name of the repository (from its url).
@@ -204,19 +223,6 @@ impl Settings {
             nvme: true,
         }
     }
-}
-
-// Resolves ${ENV} into it's value for each env variable.
-fn resolve_env(s: &str) -> String {
-    let mut s = s.to_string();
-    for (name, value) in env::vars() {
-        s = s.replace(&format!("${{{}}}", name), &value);
-    }
-    if s.contains("${") {
-        eprintln!("settings.json:\n{}\n", s);
-        panic!("Unresolved env variables in the settings.json");
-    }
-    s
 }
 
 #[cfg(test)]

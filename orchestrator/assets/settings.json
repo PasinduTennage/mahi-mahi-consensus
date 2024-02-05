@@ -7,7 +7,7 @@
     "specs": "m5d.8xlarge",
     "repository": {
         "url": "https://github.com/mystenlabs/project-mysticeti.git",
-        "commit": "paper"
+        "commit": "research"
     },
     "nvme": false
 }

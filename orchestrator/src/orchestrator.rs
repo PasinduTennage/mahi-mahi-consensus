@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-// use futures::future::select_all;
 use std::{
     collections::{HashMap, VecDeque},
     fs::{self},
@@ -14,9 +13,12 @@ use tokio::select;
 use tokio::time::{self, Instant};
 
 // use crate::error::SshError;
-use crate::monitor::{Monitor, NodeMonitorHandle};
 use crate::{
-    benchmark::{BenchmarkParameters, BenchmarkParametersGenerator, BenchmarkType},
+    benchmark::NodeConfig,
+    monitor::{Monitor, NodeMonitorHandle},
+};
+use crate::{
+    benchmark::{BenchmarkParameters, BenchmarkParametersGenerator},
     client::Instance,
     display, ensure,
     error::{TestbedError, TestbedResult},
@@ -35,7 +37,7 @@ pub struct Orchestrator<P, T> {
     /// The state of the testbed (reflecting accurately the state of the machines).
     instances: Vec<Instance>,
     /// The type of the benchmark parameters.
-    benchmark_type: PhantomData<T>,
+    node_config: PhantomData<T>,
     /// Provider-specific commands to install on the instance.
     instance_setup_commands: Vec<String>,
     /// Protocol-specific commands generator to generate the protocol configuration files,
@@ -77,7 +79,7 @@ impl<P, T> Orchestrator<P, T> {
         Self {
             settings,
             instances,
-            benchmark_type: PhantomData,
+            node_config: PhantomData,
             instance_setup_commands,
             protocol_commands,
             ssh_manager,
@@ -211,7 +213,7 @@ impl<P, T> Orchestrator<P, T> {
     }
 }
 
-impl<P: ProtocolCommands<T> + ProtocolMetrics, T: BenchmarkType> Orchestrator<P, T> {
+impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T> {
     /// Boot one node per instance.
     async fn boot_nodes(
         &self,
@@ -693,8 +695,8 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: BenchmarkType> Orchestrator<P,
         let mut latest_committee_size = 0;
         while let Some(parameters) = generator.next() {
             display::header(format!("Starting benchmark {i}"));
-            display::config("Benchmark type", &parameters.benchmark_type);
-            display::config("Parameters", &parameters);
+            display::config("Node Parameters", &parameters.node_config);
+            display::config("Benchmark Parameters", &parameters);
             display::newline();
 
             // Cleanup the testbed (in case the previous run was not completed).

@@ -3,8 +3,6 @@
 
 use std::{
     fmt::{Debug, Display},
-    hash::Hash,
-    str::FromStr,
     time::Duration,
 };
 
@@ -12,28 +10,13 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{faults::FaultsType, measurement::MeasurementsCollection};
 
-pub trait BenchmarkType:
-    Serialize
-    + DeserializeOwned
-    + Default
-    + Clone
-    + FromStr
-    + Display
-    + Debug
-    + PartialEq
-    + Eq
-    + Hash
-    + PartialOrd
-    + Ord
-    + FromStr
-{
-}
+pub trait NodeConfig: Default + Clone + Serialize + DeserializeOwned + Debug + Display {}
 
 /// The benchmark parameters for a run.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct BenchmarkParameters<T> {
     /// The type of benchmark to run.
-    pub benchmark_type: T,
+    pub node_config: T,
     /// The committee size.
     pub nodes: usize,
     /// The number of (crash-)faults.
@@ -44,10 +27,10 @@ pub struct BenchmarkParameters<T> {
     pub duration: Duration,
 }
 
-impl<T: BenchmarkType> Default for BenchmarkParameters<T> {
+impl<T: Default> Default for BenchmarkParameters<T> {
     fn default() -> Self {
         Self {
-            benchmark_type: T::default(),
+            node_config: T::default(),
             nodes: 4,
             faults: FaultsType::default(),
             load: 500,
@@ -56,12 +39,12 @@ impl<T: BenchmarkType> Default for BenchmarkParameters<T> {
     }
 }
 
-impl<T: BenchmarkType> Debug for BenchmarkParameters<T> {
+impl<T: Debug> Debug for BenchmarkParameters<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{:?}-{:?}-{}-{}",
-            self.benchmark_type, self.faults, self.nodes, self.load
+            self.node_config, self.faults, self.nodes, self.load
         )
     }
 }
@@ -79,14 +62,14 @@ impl<T> Display for BenchmarkParameters<T> {
 impl<T> BenchmarkParameters<T> {
     /// Make a new benchmark parameters.
     pub fn new(
-        benchmark_type: T,
+        node_config: T,
         nodes: usize,
         faults: FaultsType,
         load: usize,
         duration: Duration,
     ) -> Self {
         Self {
-            benchmark_type,
+            node_config,
             nodes,
             faults,
             load,
@@ -112,10 +95,9 @@ pub enum LoadType {
 }
 
 /// Generate benchmark parameters (one set of parameters per run).
-// TODO: The rusty thing to do would be to implement Iter.
 pub struct BenchmarkParametersGenerator<T> {
     /// The type of benchmark to run.
-    benchmark_type: T,
+    node_config: T,
     /// The committee size.
     pub nodes: usize,
     /// The load type.
@@ -134,14 +116,14 @@ pub struct BenchmarkParametersGenerator<T> {
     iterations: usize,
 }
 
-impl<T: BenchmarkType> Iterator for BenchmarkParametersGenerator<T> {
+impl<T: Clone> Iterator for BenchmarkParametersGenerator<T> {
     type Item = BenchmarkParameters<T>;
 
     /// Return the next set of benchmark parameters to run.
     fn next(&mut self) -> Option<Self::Item> {
         self.next_load.map(|load| {
             BenchmarkParameters::new(
-                self.benchmark_type.clone(),
+                self.node_config.clone(),
                 self.nodes,
                 self.faults.clone(),
                 load,
@@ -151,7 +133,7 @@ impl<T: BenchmarkType> Iterator for BenchmarkParametersGenerator<T> {
     }
 }
 
-impl<T: BenchmarkType> BenchmarkParametersGenerator<T> {
+impl<T: NodeConfig> BenchmarkParametersGenerator<T> {
     /// The default benchmark duration.
     const DEFAULT_DURATION: Duration = Duration::from_secs(180);
 
@@ -168,7 +150,7 @@ impl<T: BenchmarkType> BenchmarkParametersGenerator<T> {
             LoadType::Search { starting_load, .. } => Some(*starting_load),
         };
         Self {
-            benchmark_type: T::default(),
+            node_config: T::default(),
             nodes,
             load_type,
             faults: FaultsType::default(),
@@ -181,8 +163,8 @@ impl<T: BenchmarkType> BenchmarkParametersGenerator<T> {
     }
 
     /// Set the benchmark type.
-    pub fn with_benchmark_type(mut self, benchmark_type: T) -> Self {
-        self.benchmark_type = benchmark_type;
+    pub fn with_node_config(mut self, node_config: T) -> Self {
+        self.node_config = node_config;
         self
     }
 
@@ -283,21 +265,21 @@ pub mod test {
         settings::Settings,
     };
 
-    use super::{BenchmarkParametersGenerator, BenchmarkType, LoadType};
+    use super::{BenchmarkParametersGenerator, LoadType, NodeConfig};
 
     /// Mock benchmark type for unit tests.
     #[derive(
         Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Default,
     )]
-    pub struct TestBenchmarkType;
+    pub struct TestNodeConfig;
 
-    impl Display for TestBenchmarkType {
+    impl Display for TestNodeConfig {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "TestBenchmarkType")
+            write!(f, "TestNodeConfig")
         }
     }
 
-    impl FromStr for TestBenchmarkType {
+    impl FromStr for TestNodeConfig {
         type Err = ();
 
         fn from_str(_s: &str) -> Result<Self, Self::Err> {
@@ -305,7 +287,7 @@ pub mod test {
         }
     }
 
-    impl BenchmarkType for TestBenchmarkType {}
+    impl NodeConfig for TestNodeConfig {}
 
     #[test]
     fn set_lower_bound() {
@@ -315,7 +297,7 @@ pub mod test {
             starting_load: 100,
             max_iterations: 10,
         };
-        let mut generator = BenchmarkParametersGenerator::<TestBenchmarkType>::new(nodes, load);
+        let mut generator = BenchmarkParametersGenerator::<TestNodeConfig>::new(nodes, load);
         let parameters = generator.next().unwrap();
 
         let collection = MeasurementsCollection::new(&settings, parameters);
@@ -341,7 +323,7 @@ pub mod test {
             starting_load: 100,
             max_iterations: 10,
         };
-        let mut generator = BenchmarkParametersGenerator::<TestBenchmarkType>::new(nodes, load);
+        let mut generator = BenchmarkParametersGenerator::<TestNodeConfig>::new(nodes, load);
         let first_parameters = generator.next().unwrap();
 
         // Register a first result (zero latency). This sets the lower bound.
@@ -380,7 +362,7 @@ pub mod test {
             starting_load: 100,
             max_iterations: 0,
         };
-        let mut generator = BenchmarkParametersGenerator::<TestBenchmarkType>::new(nodes, load);
+        let mut generator = BenchmarkParametersGenerator::<TestNodeConfig>::new(nodes, load);
         let parameters = generator.next().unwrap();
 
         let collection = MeasurementsCollection::new(&settings, parameters);
