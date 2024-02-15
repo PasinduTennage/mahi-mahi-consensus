@@ -8,11 +8,12 @@ use std::{
     path::PathBuf,
     time::Duration,
 };
-use tokio::select;
 
-use tokio::time::{self, Instant};
+use tokio::{
+    select,
+    time::{self, Instant},
+};
 
-// use crate::error::SshError;
 use crate::{
     benchmark::BenchmarkParameters,
     client::Instance,
@@ -21,13 +22,10 @@ use crate::{
     faults::CrashRecoverySchedule,
     logs::LogsAnalyzer,
     measurement::{Measurement, MeasurementsCollection},
+    monitor::{Monitor, NodeMonitorHandle},
     protocol::{ProtocolCommands, ProtocolMetrics},
     settings::Settings,
     ssh::{CommandContext, CommandStatus, SshConnectionManager},
-};
-use crate::{
-    benchmark::Config,
-    monitor::{Monitor, NodeMonitorHandle},
 };
 
 /// An orchestrator to run benchmarks on a testbed.
