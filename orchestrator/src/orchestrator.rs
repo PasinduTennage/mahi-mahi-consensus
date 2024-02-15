@@ -14,11 +14,7 @@ use tokio::time::{self, Instant};
 
 // use crate::error::SshError;
 use crate::{
-    benchmark::NodeConfig,
-    monitor::{Monitor, NodeMonitorHandle},
-};
-use crate::{
-    benchmark::{BenchmarkParameters, BenchmarkParametersGenerator},
+    benchmark::BenchmarkParameters,
     client::Instance,
     display, ensure,
     error::{TestbedError, TestbedResult},
@@ -29,15 +25,21 @@ use crate::{
     settings::Settings,
     ssh::{CommandContext, CommandStatus, SshConnectionManager},
 };
+use crate::{
+    benchmark::Config,
+    monitor::{Monitor, NodeMonitorHandle},
+};
 
 /// An orchestrator to run benchmarks on a testbed.
-pub struct Orchestrator<P, T> {
+pub struct Orchestrator<P, N, C> {
     /// The testbed's settings.
     settings: Settings,
     /// The state of the testbed (reflecting accurately the state of the machines).
     instances: Vec<Instance>,
-    /// The type of the benchmark parameters.
-    node_config: PhantomData<T>,
+    /// The node's configuration parameters.
+    node_config: PhantomData<N>,
+    /// The client's configuration parameters.
+    client_config: PhantomData<C>,
     /// Provider-specific commands to install on the instance.
     instance_setup_commands: Vec<String>,
     /// Protocol-specific commands generator to generate the protocol configuration files,
@@ -62,7 +64,7 @@ pub struct Orchestrator<P, T> {
     monitoring: bool,
 }
 
-impl<P, T> Orchestrator<P, T> {
+impl<P, N, C> Orchestrator<P, N, C> {
     /// The default interval between measurements collection.
     const DEFAULT_SCRAPE_INTERVAL: Duration = Duration::from_secs(15);
     /// The default interval to crash nodes.
@@ -80,6 +82,7 @@ impl<P, T> Orchestrator<P, T> {
             settings,
             instances,
             node_config: PhantomData,
+            client_config: PhantomData,
             instance_setup_commands,
             protocol_commands,
             ssh_manager,
@@ -140,7 +143,7 @@ impl<P, T> Orchestrator<P, T> {
     /// contains the instances on which to run the nodes.
     pub fn select_instances(
         &self,
-        parameters: &BenchmarkParameters<T>,
+        parameters: &BenchmarkParameters,
     ) -> TestbedResult<(Vec<Instance>, Vec<Instance>, Option<Instance>)> {
         // Ensure there are enough active instances.
         let available_instances: Vec<_> = self.instances.iter().filter(|x| x.is_active()).collect();
@@ -213,12 +216,12 @@ impl<P, T> Orchestrator<P, T> {
     }
 }
 
-impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T> {
+impl<P: ProtocolCommands<N, C> + ProtocolMetrics, N, C> Orchestrator<P, N, C> {
     /// Boot one node per instance.
     async fn boot_nodes(
         &self,
         instances: Vec<Instance>,
-        parameters: &BenchmarkParameters<T>,
+        parameters: &BenchmarkParameters,
     ) -> TestbedResult<NodeMonitorHandle> {
         // Run one node per instance.
         let targets = self
@@ -352,7 +355,7 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
     }
 
     /// Reload prometheus on all instances.
-    pub async fn start_monitoring(&self, parameters: &BenchmarkParameters<T>) -> TestbedResult<()> {
+    pub async fn start_monitoring(&self, parameters: &BenchmarkParameters) -> TestbedResult<()> {
         let (clients, nodes, instance) = self.select_instances(parameters)?;
         if let Some(instance) = instance {
             display::action("Configuring monitoring instance");
@@ -371,31 +374,6 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
             display::config("Grafana address", monitor.grafana_address());
             display::newline();
         }
-
-        // let (clients, nodes, _) = self.select_instances(parameters)?;
-        // let monitor = Monitor::new(
-        //     clients,
-        //     nodes,
-        //     self.ssh_manager.clone(),
-        //     self.dedicated_clients != 0,
-        // );
-
-        // // Start prometheus on all instances.
-        // monitor.start_prometheus(&self.protocol_commands).await?;
-
-        // // Start grafana on the localhost (only macOs, homebrew install).
-        // if self.monitoring && cfg!(target_os = "macos") {
-        //     monitor.start_grafana()?;
-        //     display::done();
-        //     display::config(
-        //         "Grafana address",
-        //         format!("http://localhost:{}", Grafana::DEFAULT_PORT),
-        //     );
-        //     display::newline();
-        // } else {
-        //     display::done();
-        // }
-
         Ok(())
     }
 
@@ -436,7 +414,7 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
     }
 
     /// Configure the instances with the appropriate configuration files.
-    pub async fn configure(&self, parameters: &BenchmarkParameters<T>) -> TestbedResult<()> {
+    pub async fn configure(&self, parameters: &BenchmarkParameters) -> TestbedResult<()> {
         display::action("Configuring instances");
 
         // Select instances to configure.
@@ -482,7 +460,7 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
     /// Deploy the nodes.
     pub async fn run_nodes(
         &self,
-        parameters: &BenchmarkParameters<T>,
+        parameters: &BenchmarkParameters,
     ) -> TestbedResult<NodeMonitorHandle> {
         display::action("Deploying validators");
 
@@ -497,7 +475,7 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
     }
 
     /// Deploy the load generators.
-    pub async fn run_clients(&self, parameters: &BenchmarkParameters<T>) -> TestbedResult<()> {
+    pub async fn run_clients(&self, parameters: &BenchmarkParameters) -> TestbedResult<()> {
         display::action("Setting up load generators");
 
         // Select the instances to run.
@@ -528,8 +506,8 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
     /// Collect metrics from the load generators.
     pub async fn run(
         &self,
-        parameters: &BenchmarkParameters<T>,
-    ) -> TestbedResult<MeasurementsCollection<T>> {
+        parameters: &BenchmarkParameters,
+    ) -> TestbedResult<MeasurementsCollection> {
         display::action(format!(
             "Scraping metrics (at least {}s)",
             parameters.duration.as_secs()
@@ -612,7 +590,7 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
     /// Download the log files from the nodes and clients.
     pub async fn download_logs(
         &self,
-        parameters: &BenchmarkParameters<T>,
+        parameters: &BenchmarkParameters,
     ) -> TestbedResult<LogsAnalyzer> {
         // Select the instances to run.
         let (clients, nodes, _) = self.select_instances(parameters)?;
@@ -675,7 +653,7 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
     /// Run all the benchmarks specified by the benchmark generator.
     pub async fn run_benchmarks(
         &mut self,
-        mut generator: BenchmarkParametersGenerator<T>,
+        set_of_parameters: Vec<BenchmarkParameters>,
     ) -> TestbedResult<()> {
         display::header("Preparing testbed");
         display::config("Commit", format!("'{}'", &self.settings.repository.commit));
@@ -693,7 +671,7 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
         // Run all benchmarks.
         let mut i = 1;
         let mut latest_committee_size = 0;
-        while let Some(parameters) = generator.next() {
+        for parameters in set_of_parameters {
             display::header(format!("Starting benchmark {i}"));
             display::config("Node Parameters", &parameters.node_config);
             display::config("Benchmark Parameters", &parameters);
@@ -719,7 +697,6 @@ impl<P: ProtocolCommands<T> + ProtocolMetrics, T: NodeConfig> Orchestrator<P, T>
             // Wait for the benchmark to terminate. Then save the results and print a summary.
             let aggregator = self.run(&parameters).await?;
             aggregator.display_summary();
-            generator.register_result(aggregator);
             drop(monitor);
 
             // Kill the nodes and clients (without deleting the log files).

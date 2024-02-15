@@ -15,10 +15,7 @@ use prometheus_parse::Scrape;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    benchmark::{BenchmarkParameters, NodeConfig},
-    display,
-    protocol::ProtocolMetrics,
-    settings::Settings,
+    benchmark::BenchmarkParameters, display, protocol::ProtocolMetrics, settings::Settings,
 };
 
 /// The identifier of prometheus latency buckets.
@@ -161,20 +158,20 @@ impl Measurement {
 type ScraperId = usize;
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct MeasurementsCollection<T> {
+pub struct MeasurementsCollection {
     /// The machine / instance type.
     pub machine_specs: String,
     /// The commit of the codebase.
     pub commit: String,
     /// The benchmark parameters of the current run.
-    pub parameters: BenchmarkParameters<T>,
+    pub parameters: BenchmarkParameters,
     /// The data collected by each scraper.
     pub data: HashMap<Label, HashMap<ScraperId, Vec<Measurement>>>,
 }
 
-impl<T: NodeConfig> MeasurementsCollection<T> {
+impl MeasurementsCollection {
     /// Create a new (empty) collection of measurements.
-    pub fn new(settings: &Settings, parameters: BenchmarkParameters<T>) -> Self {
+    pub fn new(settings: &Settings, parameters: BenchmarkParameters) -> Self {
         Self {
             machine_specs: settings.specs.clone(),
             commit: settings.repository.commit.clone(),
@@ -319,10 +316,7 @@ impl<T: NodeConfig> MeasurementsCollection<T> {
 mod test {
     use std::{collections::HashMap, time::Duration};
 
-    use crate::{
-        benchmark::test::TestNodeConfig, protocol::test_protocol_metrics::TestProtocolMetrics,
-        settings::Settings,
-    };
+    use crate::{protocol::test_protocol_metrics::TestProtocolMetrics, settings::Settings};
 
     use super::{BenchmarkParameters, Measurement, MeasurementsCollection};
 
@@ -414,10 +408,7 @@ mod test {
 
         let measurements = Measurement::from_prometheus::<TestProtocolMetrics>(report);
         let settings = Settings::new_for_test();
-        let mut aggregator = MeasurementsCollection::<TestNodeConfig>::new(
-            &settings,
-            BenchmarkParameters::default(),
-        );
+        let mut aggregator = MeasurementsCollection::new(&settings, BenchmarkParameters::default());
         let scraper_id = 1;
         for (label, measurement) in measurements {
             aggregator.add(scraper_id, label, measurement);

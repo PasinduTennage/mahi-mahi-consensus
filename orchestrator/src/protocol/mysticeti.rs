@@ -19,7 +19,7 @@ use mysticeti_core::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    benchmark::{BenchmarkParameters, NodeConfig},
+    benchmark::{BenchmarkParameters, Config},
     client::Instance,
     error::SettingsError,
     settings::Settings,
@@ -27,7 +27,9 @@ use crate::{
 
 use super::{ProtocolCommands, ProtocolMetrics, CARGO_FLAGS, RUST_FLAGS};
 
-/// The type of benchmarks supported by Mysticeti.
+const DEFAULT_NODE_CONFIG_PATH: &str = "orchestrator/assets/node-config.json";
+const DEFAULT_CLIENT_CONFIG_PATH: &str = "orchestrator/assets/client-config.json";
+
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct MysticetiNodeConfig(Parameters);
 
@@ -77,14 +79,50 @@ impl FromStr for MysticetiNodeConfig {
     }
 }
 
-impl NodeConfig for MysticetiNodeConfig {}
+impl Config for MysticetiNodeConfig {}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct MysticetiClientConfig {
+    pub transaction_size: usize,
+}
+
+impl Debug for MysticetiClientConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.transaction_size)
+    }
+}
+
+impl Display for MysticetiClientConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}B transactions", self.transaction_size)
+    }
+}
+
+impl FromStr for MysticetiClientConfig {
+    type Err = SettingsError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let reader = || -> Result<Self, std::io::Error> {
+            let data = fs::read(s)?;
+            let settings: MysticetiClientConfig = serde_json::from_slice(&data)?;
+            Ok(settings)
+        };
+
+        reader().map_err(|e| SettingsError::InvalidSettings {
+            file: s.to_string(),
+            message: e.to_string(),
+        })
+    }
+}
+
+impl Config for MysticetiClientConfig {}
 
 /// All configurations information to run a Mysticeti client or validator.
 pub struct MysticetiProtocol {
     working_dir: PathBuf,
 }
 
-impl ProtocolCommands<MysticetiNodeConfig> for MysticetiProtocol {
+impl ProtocolCommands<MysticetiNodeConfig, MysticetiClientConfig> for MysticetiProtocol {
     fn protocol_dependencies(&self) -> Vec<&'static str> {
         vec![]
     }
@@ -97,14 +135,14 @@ impl ProtocolCommands<MysticetiNodeConfig> for MysticetiProtocol {
         vec!["killall mysticeti".to_string()]
     }
 
-    fn genesis_command<'a, I>(
-        &self,
-        instances: I,
-        parameters: &BenchmarkParameters<MysticetiNodeConfig>,
-    ) -> String
+    fn genesis_command<'a, I>(&self, instances: I, parameters: &BenchmarkParameters) -> String
     where
         I: Iterator<Item = &'a Instance>,
     {
+        // 1. Upload node config to all instances. Get them from file and add ip addresses.
+        // 2. Upload client config to all instances. Get them from CLI args.
+        // 3. Run the genesis command on all instances to generate the private configuration file and committee file.
+
         let ips = instances
             .map(|x| x.main_ip.to_string())
             .collect::<Vec<_>>()
@@ -146,7 +184,7 @@ impl ProtocolCommands<MysticetiNodeConfig> for MysticetiProtocol {
     fn node_command<I>(
         &self,
         instances: I,
-        parameters: &BenchmarkParameters<MysticetiNodeConfig>,
+        parameters: &BenchmarkParameters,
     ) -> Vec<(Instance, String)>
     where
         I: IntoIterator<Item = Instance>,
@@ -206,7 +244,7 @@ impl ProtocolCommands<MysticetiNodeConfig> for MysticetiProtocol {
     fn client_command<I>(
         &self,
         _instances: I,
-        _parameters: &BenchmarkParameters<MysticetiNodeConfig>,
+        _parameters: &BenchmarkParameters,
     ) -> Vec<(Instance, String)>
     where
         I: IntoIterator<Item = Instance>,

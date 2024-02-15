@@ -3,14 +3,14 @@
 
 use std::{str::FromStr, time::Duration};
 
-use benchmark::{BenchmarkParametersGenerator, LoadType};
+use benchmark::BenchmarkParameters;
 use clap::Parser;
 use client::{aws::AwsClient, vultr::VultrClient, ServerProviderClient};
 use eyre::{eyre, Context, Result};
 use faults::FaultsType;
 use measurement::MeasurementsCollection;
 use orchestrator::Orchestrator;
-use protocol::mysticeti::{MysticetiNodeConfig, MysticetiProtocol};
+use protocol::mysticeti::{MysticetiClientConfig, MysticetiNodeConfig, MysticetiProtocol};
 use settings::{CloudProvider, Settings};
 use ssh::SshConnectionManager;
 use testbed::Testbed;
@@ -32,6 +32,7 @@ pub mod testbed;
 /// NOTE: Link these types to the correct protocol.
 type Protocol = MysticetiProtocol;
 type NodeConfig = MysticetiNodeConfig;
+type ClientConfig = MysticetiClientConfig;
 
 #[derive(Parser)]
 #[command(author, version, about = "Testbed orchestrator", long_about = None)]
@@ -62,24 +63,23 @@ pub enum Operation {
     /// Run a benchmark on the specified testbed.
     Benchmark {
         /// The node's parameters.
-        #[clap(
-            long,
-            value_name = "FILE",
-            default_value = "orchestrator/assets/node-config.json",
-            global = true
-        )]
-        node_config: String,
+        #[clap(long, global = true)]
+        node_config: Option<String>,
+
+        /// The client's parameters.
+        #[clap(long, global = true)]
+        client_config: Option<String>,
 
         /// The committee size to deploy.
         #[clap(long, value_name = "INT")]
         committee: usize,
 
         /// Number of faulty nodes.
-        #[clap(long, value_name = "INT", default_value = "0", global = true)]
+        #[clap(long, value_name = "INT", default_value_t = 0, global = true)]
         faults: usize,
 
         /// Whether the faulty nodes recover.
-        #[clap(long, action, default_value = "false", global = true)]
+        #[clap(long, action, default_value_t = false, global = true)]
         crash_recovery: bool,
 
         /// The interval to crash nodes in seconds.
@@ -95,24 +95,24 @@ pub enum Operation {
         scrape_interval: Duration,
 
         /// Whether to skip testbed updates before running benchmarks.
-        #[clap(long, action, default_value = "false", global = true)]
+        #[clap(long, action, default_value_t = false, global = true)]
         skip_testbed_update: bool,
 
         /// Whether to skip testbed configuration before running benchmarks.
-        #[clap(long, action, default_value = "false", global = true)]
+        #[clap(long, action, default_value_t = false, global = true)]
         skip_testbed_configuration: bool,
 
         /// Whether to download and analyze the client and node log files.
-        #[clap(long, action, default_value = "false", global = true)]
+        #[clap(long, action, default_value_t = false, global = true)]
         log_processing: bool,
 
         /// The number of instances running exclusively load generators. If set to zero the
         /// orchestrator collocates one load generator with each node.
-        #[clap(long, value_name = "INT", default_value = "0", global = true)]
+        #[clap(long, value_name = "INT", default_value_t = 0, global = true)]
         dedicated_clients: usize,
 
         /// Whether boot prometheus and grafana on a dedicated machine to monitor the benchmark.
-        #[clap(long, action, default_value = "true", global = true)]
+        #[clap(long, action, default_value_t = true, global = true)]
         monitoring: bool,
 
         /// The timeout duration for ssh commands (in seconds).
@@ -120,12 +120,12 @@ pub enum Operation {
         timeout: Duration,
 
         /// The number of times the orchestrator should retry an ssh command.
-        #[clap(long, value_name = "INT", default_value = "5", global = true)]
+        #[clap(long, value_name = "INT", default_value_t = 5, global = true)]
         retries: usize,
 
         /// The load to submit to the system.
-        #[clap(subcommand)]
-        load_type: Load,
+        #[clap(long, value_name = "[INT]", default_value = "[200]", global = true)]
+        loads: Vec<usize>,
     },
 
     /// Print a summary of the specified measurements collection.
@@ -169,30 +169,30 @@ pub enum TestbedAction {
     Destroy,
 }
 
-#[derive(Parser)]
-pub enum Load {
-    /// The fixed loads (in tx/s) to submit to the nodes.
-    FixedLoad {
-        /// A list of fixed load (tx/s).
-        #[clap(
-            long,
-            value_name = "INT",
-            num_args(1..),
-            value_delimiter = ','
-        )]
-        loads: Vec<usize>,
-    },
+// #[derive(Parser)]
+// pub enum Load {
+//     /// The fixed loads (in tx/s) to submit to the nodes.
+//     FixedLoad {
+//         /// A list of fixed load (tx/s).
+//         #[clap(
+//             long,
+//             value_name = "INT",
+//             num_args(1..),
+//             value_delimiter = ','
+//         )]
+//         loads: Vec<usize>,
+//     },
 
-    /// Search for the maximum load that the system can sustainably handle.
-    Search {
-        /// The initial load (in tx/s) to test and use a baseline.
-        #[clap(long, value_name = "INT", default_value = "250")]
-        starting_load: usize,
-        /// The maximum number of iterations before converging on a breaking point.
-        #[clap(long, value_name = "INT", default_value = "5")]
-        max_iterations: usize,
-    },
-}
+//     /// Search for the maximum load that the system can sustainably handle.
+//     Search {
+//         /// The initial load (in tx/s) to test and use a baseline.
+//         #[clap(long, value_name = "INT", default_value = "250")]
+//         starting_load: usize,
+//         /// The maximum number of iterations before converging on a breaking point.
+//         #[clap(long, value_name = "INT", default_value = "5")]
+//         max_iterations: usize,
+//     },
+// }
 
 fn parse_duration(arg: &str) -> Result<Duration, std::num::ParseIntError> {
     let seconds = arg.parse()?;
@@ -264,6 +264,7 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
         // Run benchmarks.
         Operation::Benchmark {
             node_config,
+            client_config,
             committee,
             faults,
             crash_recovery,
@@ -277,7 +278,7 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
             monitoring,
             timeout,
             retries,
-            load_type,
+            loads,
         } => {
             // Create a new orchestrator to instruct the testbed.
             let username = testbed.username();
@@ -294,22 +295,17 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
                 .wrap_err("Failed to load testbed setup commands")?;
 
             let protocol_commands = Protocol::new(&settings);
-            let sui_node_config = NodeConfig::from_str(&node_config)
-                .map_err(|e| eyre!(e))
-                .wrap_err("Failed to parse benchmark parameters")?;
-
-            let load = match load_type {
-                Load::FixedLoad { loads } => {
-                    let loads = if loads.is_empty() { vec![200] } else { loads };
-                    LoadType::Fixed(loads)
-                }
-                Load::Search {
-                    starting_load,
-                    max_iterations,
-                } => LoadType::Search {
-                    starting_load,
-                    max_iterations,
-                },
+            let node_config = match node_config {
+                Some(config) => NodeConfig::from_str(&config)
+                    .map_err(|e| eyre!(e))
+                    .wrap_err("Failed to parse benchmark parameters")?,
+                None => NodeConfig::default(),
+            };
+            let client_config = match client_config {
+                Some(config) => ClientConfig::from_str(&config)
+                    .map_err(|e| eyre!(e))
+                    .wrap_err("Failed to parse benchmark parameters")?,
+                None => ClientConfig::default(),
             };
 
             let fault_type = if !crash_recovery || faults == 0 {
@@ -321,10 +317,14 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
                 }
             };
 
-            let generator = BenchmarkParametersGenerator::new(committee, load)
-                .with_node_config(sui_node_config)
-                .with_custom_duration(duration)
-                .with_faults(fault_type);
+            let set_of_parameters = BenchmarkParameters::new_from_loads(
+                node_config.clone(),
+                client_config.clone(),
+                committee,
+                fault_type.clone(),
+                loads,
+                duration,
+            );
 
             Orchestrator::new(
                 settings,
@@ -340,15 +340,13 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
             .with_log_processing(log_processing)
             .with_dedicated_clients(dedicated_clients)
             .with_monitoring(monitoring)
-            .run_benchmarks(generator)
+            .run_benchmarks(set_of_parameters)
             .await
             .wrap_err("Failed to run benchmarks")?;
         }
 
         // Print a summary of the specified measurements collection.
-        Operation::Summarize { path } => {
-            MeasurementsCollection::<NodeConfig>::load(path)?.display_summary()
-        }
+        Operation::Summarize { path } => MeasurementsCollection::load(path)?.display_summary(),
     }
     Ok(())
 }

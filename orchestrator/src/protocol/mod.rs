@@ -12,7 +12,7 @@ pub const RUST_FLAGS: &str = "RUSTFLAGS=-C\\ target-cpu=native";
 
 /// The minimum interface that the protocol should implement to allow benchmarks from
 /// the orchestrator.
-pub trait ProtocolCommands<T> {
+pub trait ProtocolCommands<N, C> {
     /// The list of dependencies to install (e.g., through apt-get).
     fn protocol_dependencies(&self) -> Vec<&'static str>;
 
@@ -23,7 +23,7 @@ pub trait ProtocolCommands<T> {
 
     /// The command to generate the genesis and all configuration files. This command
     /// is run on each remote machine.
-    fn genesis_command<'a, I>(&self, instances: I, parameters: &BenchmarkParameters<T>) -> String
+    fn genesis_command<'a, I>(&self, instances: I, parameters: &BenchmarkParameters) -> String
     where
         I: Iterator<Item = &'a Instance>;
 
@@ -32,7 +32,7 @@ pub trait ProtocolCommands<T> {
     fn node_command<I>(
         &self,
         instances: I,
-        parameters: &BenchmarkParameters<T>,
+        parameters: &BenchmarkParameters,
     ) -> Vec<(Instance, String)>
     where
         I: IntoIterator<Item = Instance>;
@@ -46,7 +46,7 @@ pub trait ProtocolCommands<T> {
     fn client_command<I>(
         &self,
         instances: I,
-        parameters: &BenchmarkParameters<T>,
+        parameters: &BenchmarkParameters,
     ) -> Vec<(Instance, String)>
     where
         I: IntoIterator<Item = Instance>;
