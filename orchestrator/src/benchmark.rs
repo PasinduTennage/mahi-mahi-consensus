@@ -64,6 +64,8 @@ impl<N, C> Display for BenchmarkParametersGeneric<N, C> {
     }
 }
 
+// Requiring `N` and `C` to be `Config` is not necessary, but clarifies error messages if the user forgets to
+// implement the `Config` trait for `N` and `C`.
 impl<N: Config, C: Config> BenchmarkParametersGeneric<N, C> {
     /// Make a new benchmark parameters.
     pub fn new_from_loads(

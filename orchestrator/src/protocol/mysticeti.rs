@@ -131,6 +131,7 @@ impl ProtocolCommands<MysticetiNodeConfig, MysticetiClientConfig> for MysticetiP
         vec![self.working_dir.join("private/val-*/*")]
     }
 
+    // TODO: Check if this is necessary
     fn cleanup_commands(&self) -> Vec<String> {
         vec!["killall mysticeti".to_string()]
     }
@@ -166,6 +167,7 @@ impl ProtocolCommands<MysticetiNodeConfig, MysticetiClientConfig> for MysticetiP
         ["source $HOME/.cargo/env", &genesis].join(" && ")
     }
 
+    // TODO: remove this
     fn monitor_command<I>(&self, instances: I) -> Vec<(Instance, String)>
     where
         I: IntoIterator<Item = Instance>,
