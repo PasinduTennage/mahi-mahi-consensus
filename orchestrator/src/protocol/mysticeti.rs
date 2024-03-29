@@ -10,6 +10,7 @@ use std::{
     ops::Deref,
     path::PathBuf,
     str::FromStr,
+    time::Duration,
 };
 
 use mysticeti_core::{
@@ -21,7 +22,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{ProtocolCommands, ProtocolMetrics, CARGO_FLAGS, RUST_FLAGS};
 use crate::{
-    benchmark::{BenchmarkParameters, Config},
+    benchmark::{BenchmarkParameters, Parameters},
     client::Instance,
     error::SettingsError,
     settings::Settings,
@@ -77,18 +78,21 @@ impl FromStr for MysticetiNodeParameters {
     }
 }
 
-impl Config for MysticetiNodeParameters {}
+impl Parameters for MysticetiNodeParameters {}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct MysticetiClientParameters {
     /// The size of transactions to send to the network in bytes.
     pub transaction_size: usize,
+    /// The initial delay before starting to send transactions.
+    pub initial_delay: Duration,
 }
 
 impl Default for MysticetiClientParameters {
     fn default() -> Self {
         Self {
             transaction_size: 512,
+            initial_delay: Duration::from_secs(30),
         }
     }
 }
@@ -109,13 +113,22 @@ impl FromStr for MysticetiClientParameters {
     type Err = ParseIntError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parameters = s.split('-').collect::<Vec<&str>>();
+        if parameters.len() == 2 {
+            return Ok(Self {
+                transaction_size: parameters[0].parse()?,
+                initial_delay: Duration::from_secs(parameters[1].parse()?),
+            });
+        }
+
         Ok(Self {
             transaction_size: s.parse()?,
+            ..Default::default()
         })
     }
 }
 
-impl Config for MysticetiClientParameters {}
+impl Parameters for MysticetiClientParameters {}
 
 /// All configurations information to run a Mysticeti client or validator.
 pub struct MysticetiProtocol {
@@ -143,27 +156,31 @@ impl ProtocolCommands<MysticetiNodeParameters, MysticetiClientParameters> for My
         // 1. Upload node config to all instances. Get them from file and add ip addresses.
         // 3. Run the genesis command on all instances to generate the private configuration file and committee file.
 
-        let ips = instances
-            .map(|x| x.main_ip.to_string())
-            .collect::<Vec<_>>()
-            .join(" ");
-        let working_directory = self.working_dir.display();
+        let ips = instances.map(|x| x.main_ip.into()).collect::<Vec<_>>();
+        let node_parameters = parameters.node_parameters.0.clone();
+        let node_public_config = NodePublicConfig::new_for_benchmarks(ips, node_parameters);
+        todo!();
+        // let ips = instances
+        //     .map(|x| x.main_ip.to_string())
+        //     .collect::<Vec<_>>()
+        //     .join(" ");
+        // let working_directory = self.working_dir.display();
 
-        let enable_pipeline = if parameters.node_parameters.enable_pipelining {
-            "--enable-pipeline"
-        } else {
-            ""
-        };
-        let number_of_leaders = parameters.node_parameters.number_of_leaders;
+        // let enable_pipeline = if parameters.node_parameters.enable_pipelining {
+        //     "--enable-pipeline"
+        // } else {
+        //     ""
+        // };
+        // let number_of_leaders = parameters.node_parameters.number_of_leaders;
 
-        let genesis = [
-            &format!("{RUST_FLAGS} cargo run {CARGO_FLAGS} --bin mysticeti --"),
-            "benchmark-genesis",
-            &format!("--ips {ips} --working-directory {working_directory} {enable_pipeline} --number-of-leaders {number_of_leaders}"),
-        ]
-        .join(" ");
+        // let genesis = [
+        //     &format!("{RUST_FLAGS} cargo run {CARGO_FLAGS} --bin mysticeti --"),
+        //     "benchmark-genesis",
+        //     &format!("--ips {ips} --working-directory {working_directory} {enable_pipeline} --number-of-leaders {number_of_leaders}"),
+        // ]
+        // .join(" ");
 
-        ["source $HOME/.cargo/env", &genesis].join(" && ")
+        // ["source $HOME/.cargo/env", &genesis].join(" && ")
     }
 
     // TODO: remove this

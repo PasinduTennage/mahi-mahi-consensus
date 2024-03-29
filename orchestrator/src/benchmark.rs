@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{faults::FaultsType, ClientParameters, NodeParameters};
 
-pub trait Config: Default + Clone + Serialize + DeserializeOwned + Debug + Display {}
+pub trait Parameters: Default + Clone + Serialize + DeserializeOwned + Debug + Display {}
 
 pub type BenchmarkParameters = BenchmarkParametersGeneric<NodeParameters, ClientParameters>;
 
@@ -51,7 +51,7 @@ impl<N, C> Display for BenchmarkParametersGeneric<N, C> {
     }
 }
 
-impl<N: Config, C: Config> BenchmarkParametersGeneric<N, C> {
+impl<N: Parameters, C: Parameters> BenchmarkParametersGeneric<N, C> {
     /// Make a new benchmark parameters.
     pub fn new_from_loads(
         node_parameters: N,
@@ -275,7 +275,7 @@ pub mod test {
     //     measurement::{Measurement, MeasurementsCollection},
     //     settings::Settings,
     // };
-    use super::Config;
+    use super::Parameters;
 
     /// Mock benchmark type for unit tests.
     #[derive(
@@ -297,7 +297,7 @@ pub mod test {
         }
     }
 
-    impl Config for TestNodeConfig {}
+    impl Parameters for TestNodeConfig {}
 
     //     #[test]
     //     fn set_lower_bound() {

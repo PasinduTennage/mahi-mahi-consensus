@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::{
-    env,
     net::{IpAddr, Ipv4Addr},
     sync::Arc,
-    time::Duration,
 };
 
 use ::prometheus::Registry;
@@ -15,7 +13,7 @@ use crate::{
     block_handler::{RealBlockHandler, TestCommitHandler},
     block_store::BlockStore,
     committee::Committee,
-    config::{NodePrivateConfig, NodePublicConfig},
+    config::{ClientParameters, NodePrivateConfig, NodePublicConfig},
     core::{Core, CoreOptions},
     log::TransactionLog,
     metrics::Metrics,
@@ -25,8 +23,7 @@ use crate::{
     runtime::{JoinError, JoinHandle},
     transactions_generator::TransactionGenerator,
     types::AuthorityIndex,
-    wal,
-    wal::walf,
+    wal::{self, walf},
 };
 
 pub struct Validator {
@@ -40,6 +37,7 @@ impl Validator {
         committee: Arc<Committee>,
         public_config: &NodePublicConfig,
         private_config: NodePrivateConfig,
+        client_parameters: ClientParameters,
     ) -> Result<Self> {
         let network_address = public_config
             .network_address(authority)
@@ -64,8 +62,8 @@ impl Validator {
             prometheus::start_prometheus_server(binding_metrics_address, &registry);
 
         // Open the block store.
-        let wal_file = wal::open_file_for_wal(private_config.storage().wal())
-            .expect("Failed to open wal file");
+        let wal_file =
+            wal::open_file_for_wal(private_config.wal()).expect("Failed to open wal file");
         let (wal_writer, wal_reader) = walf(wal_file).expect("Failed to open wal");
         let recovered = BlockStore::open(
             authority,
@@ -79,38 +77,14 @@ impl Validator {
         let (block_handler, block_sender) = RealBlockHandler::new(
             committee.clone(),
             authority,
-            private_config.storage(),
+            &private_config.certified_transactions_log(),
             recovered.block_store.clone(),
             metrics.clone(),
         );
-        let tps = env::var("TPS");
-        let tps = tps.map(|t| t.parse::<usize>().expect("Failed to parse TPS variable"));
-        let tps = tps.unwrap_or(10);
-        let initial_delay = env::var("INITIAL_DELAY");
-        let initial_delay = initial_delay.map(|t| {
-            t.parse::<u64>()
-                .expect("Failed to parse INITIAL_DELAY variable")
-        });
-        let initial_delay = initial_delay.unwrap_or(10);
-        let transaction_size = env::var("TRANSACTION_SIZE");
-        let transaction_size = transaction_size
-            .map(|t| {
-                t.parse::<usize>()
-                    .expect("Failed to parse TRANSACTION_SIZE variable")
-            })
-            .unwrap_or(TransactionGenerator::DEFAULT_TRANSACTION_SIZE);
 
-        tracing::info!("Starting generator with {tps} transactions per second, initial delay {initial_delay} sec");
-        let initial_delay = Duration::from_secs(initial_delay);
-        TransactionGenerator::start(
-            block_sender,
-            authority,
-            tps,
-            transaction_size,
-            initial_delay,
-        );
+        TransactionGenerator::start(block_sender, authority, client_parameters);
         let committed_transaction_log =
-            TransactionLog::start(private_config.storage().committed_transactions_log())
+            TransactionLog::start(private_config.committed_transactions_log())
                 .expect("Failed to open committed transaction log for write");
         let commit_handler = TestCommitHandler::new_with_handler(
             committee.clone(),
@@ -180,7 +154,7 @@ mod smoke_tests {
     use super::Validator;
     use crate::{
         committee::Committee,
-        config::{self, NodePrivateConfig, NodePublicConfig},
+        config::{self, ClientParameters, NodePrivateConfig, NodePublicConfig},
         prometheus,
         types::AuthorityIndex,
     };
@@ -211,21 +185,28 @@ mod smoke_tests {
     async fn validator_commit() {
         let committee_size = 4;
         let committee = Committee::new_for_benchmarks(committee_size);
-        let parameters = NodePublicConfig::new_for_tests(committee_size).with_port_offset(0);
+        let public_config = NodePublicConfig::new_for_tests(committee_size).with_port_offset(0);
+        let client_parameters = ClientParameters::default();
 
         let mut handles = Vec::new();
         let tempdir = TempDir::new("validator_commit").unwrap();
         for i in 0..committee_size {
             let authority = i as AuthorityIndex;
-            let private = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+            let private_config = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
 
-            let validator = Validator::start(authority, committee.clone(), &parameters, private)
-                .await
-                .unwrap();
+            let validator = Validator::start(
+                authority,
+                committee.clone(),
+                &public_config,
+                private_config,
+                client_parameters.clone(),
+            )
+            .await
+            .unwrap();
             handles.push(validator.await_completion());
         }
 
-        let addresses = parameters
+        let addresses = public_config
             .all_metric_addresses()
             .map(|address| address.to_owned())
             .collect();
@@ -242,7 +223,8 @@ mod smoke_tests {
     async fn validator_sync() {
         let committee_size = 4;
         let committee = Committee::new_for_benchmarks(committee_size);
-        let parameters = NodePublicConfig::new_for_tests(committee_size).with_port_offset(100);
+        let public_config = NodePublicConfig::new_for_tests(committee_size).with_port_offset(100);
+        let client_parameters = ClientParameters::default();
 
         let mut handles = Vec::new();
         let tempdir = TempDir::new("validator_sync").unwrap();
@@ -250,16 +232,22 @@ mod smoke_tests {
         // Boot all validators but one.
         for i in 1..committee_size {
             let authority = i as AuthorityIndex;
-            let private = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+            let private_config = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
 
-            let validator = Validator::start(authority, committee.clone(), &parameters, private)
-                .await
-                .unwrap();
+            let validator = Validator::start(
+                authority,
+                committee.clone(),
+                &public_config,
+                private_config,
+                client_parameters.clone(),
+            )
+            .await
+            .unwrap();
             handles.push(validator.await_completion());
         }
 
         // Boot the last validator after they others commit.
-        let addresses = parameters
+        let addresses = public_config
             .all_metric_addresses()
             .skip(1)
             .map(|address| address.to_owned())
@@ -272,14 +260,20 @@ mod smoke_tests {
 
         // Boot the last validator.
         let authority = 0 as AuthorityIndex;
-        let private = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
-        let validator = Validator::start(authority, committee.clone(), &parameters, private)
-            .await
-            .unwrap();
+        let private_config = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+        let validator = Validator::start(
+            authority,
+            committee.clone(),
+            &public_config,
+            private_config,
+            client_parameters,
+        )
+        .await
+        .unwrap();
         handles.push(validator.await_completion());
 
         // Ensure the last validator commits.
-        let address = parameters
+        let address = public_config
             .all_metric_addresses()
             .next()
             .map(|address| address.to_owned())
@@ -296,21 +290,28 @@ mod smoke_tests {
     async fn validator_crash_faults() {
         let committee_size = 4;
         let committee = Committee::new_for_benchmarks(committee_size);
-        let parameters = NodePublicConfig::new_for_tests(committee_size).with_port_offset(200);
+        let public_config = NodePublicConfig::new_for_tests(committee_size).with_port_offset(200);
+        let client_parameters = ClientParameters::default();
 
         let mut handles = Vec::new();
         let tempdir = TempDir::new("validator_crash_faults").unwrap();
         for i in 1..committee_size {
             let authority = i as AuthorityIndex;
-            let private = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+            let private_config = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
 
-            let validator = Validator::start(authority, committee.clone(), &parameters, private)
-                .await
-                .unwrap();
+            let validator = Validator::start(
+                authority,
+                committee.clone(),
+                &public_config,
+                private_config,
+                client_parameters.clone(),
+            )
+            .await
+            .unwrap();
             handles.push(validator.await_completion());
         }
 
-        let addresses = parameters
+        let addresses = public_config
             .all_metric_addresses()
             .skip(1)
             .map(|address| address.to_owned())

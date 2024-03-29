@@ -1,23 +1,37 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crypto::{dummy_public_key, PublicKey};
-use crate::range_map::RangeMap;
-use crate::types::{
-    AuthorityIndex, AuthoritySet, BaseStatement, BlockReference, Stake, StatementBlock,
-    TransactionLocator, TransactionLocatorRange, Vote,
+use std::{
+    borrow::Borrow,
+    collections::{HashMap, HashSet},
+    fmt::Display,
+    hash::Hash,
+    marker::PhantomData,
+    ops::Range,
+    sync::Arc,
 };
-use crate::{config::Print, data::Data};
+
 use minibytes::Bytes;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
-use std::collections::{HashMap, HashSet};
-use std::fmt::Display;
-use std::hash::Hash;
-use std::marker::PhantomData;
-use std::ops::Range;
-use std::sync::Arc;
+
+use crate::{
+    config::ImportExport,
+    crypto::{dummy_public_key, PublicKey},
+    data::Data,
+    range_map::RangeMap,
+    types::{
+        AuthorityIndex,
+        AuthoritySet,
+        BaseStatement,
+        BlockReference,
+        Stake,
+        StatementBlock,
+        TransactionLocator,
+        TransactionLocatorRange,
+        Vote,
+    },
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct Committee {
@@ -163,7 +177,7 @@ impl Authority {
     }
 }
 
-impl Print for Committee {}
+impl ImportExport for Committee {}
 
 pub trait CommitteeThreshold: Clone {
     fn is_threshold(committee: &Committee, amount: Stake) -> bool;

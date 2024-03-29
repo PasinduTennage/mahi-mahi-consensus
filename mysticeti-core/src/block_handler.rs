@@ -1,32 +1,38 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::config::StorageDir;
-use crate::data::Data;
-use crate::log::TransactionLog;
-use crate::metrics::UtilizationTimerExt;
-use crate::metrics::UtilizationTimerVecExt;
-use crate::runtime::TimeInstant;
-use crate::syncer::CommitObserver;
-use crate::types::{
-    AuthorityIndex, BaseStatement, BlockReference, StatementBlock, Transaction, TransactionLocator,
+use std::{
+    collections::{HashMap, HashSet},
+    env,
+    path::Path,
+    sync::Arc,
+    time::Duration,
 };
-use crate::{block_store::BlockStore, metrics::Metrics};
-use crate::{
-    committee::{Committee, ProcessedTransactionHandler, QuorumThreshold, TransactionAggregator},
-    runtime,
-};
-use crate::{
-    consensus::linearizer::{CommittedSubDag, Linearizer},
-    transactions_generator::TransactionGenerator,
-};
+
 use minibytes::Bytes;
 use parking_lot::Mutex;
-use std::collections::{HashMap, HashSet};
-use std::env;
-use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::mpsc;
+
+use crate::{
+    block_store::BlockStore,
+    committee::{Committee, ProcessedTransactionHandler, QuorumThreshold, TransactionAggregator},
+    consensus::linearizer::{CommittedSubDag, Linearizer},
+    data::Data,
+    log::TransactionLog,
+    metrics::{Metrics, UtilizationTimerExt, UtilizationTimerVecExt},
+    runtime,
+    runtime::TimeInstant,
+    syncer::CommitObserver,
+    transactions_generator::TransactionGenerator,
+    types::{
+        AuthorityIndex,
+        BaseStatement,
+        BlockReference,
+        StatementBlock,
+        Transaction,
+        TransactionLocator,
+    },
+};
 
 pub trait BlockHandler: Send + Sync {
     fn handle_blocks(
@@ -75,12 +81,12 @@ impl RealBlockHandler {
     pub fn new(
         committee: Arc<Committee>,
         authority: AuthorityIndex,
-        config: &StorageDir,
+        certified_transactions_log_path: &Path,
         block_store: BlockStore,
         metrics: Arc<Metrics>,
     ) -> (Self, mpsc::Sender<Vec<Transaction>>) {
         let (sender, receiver) = mpsc::channel(1024);
-        let transaction_log = TransactionLog::start(config.certified_transactions_log())
+        let transaction_log = TransactionLog::start(certified_transactions_log_path)
             .expect("Failed to open certified transaction log for write");
 
         let consensus_only = env::var("CONSENSUS_ONLY").is_ok();

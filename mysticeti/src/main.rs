@@ -13,7 +13,7 @@ use eyre::{eyre, Context, Result};
 use futures::future;
 use mysticeti_core::{
     committee::Committee,
-    config::{NodePrivateConfig, NodePublicConfig, Print},
+    config::{ClientParameters, ImportExport, NodePrivateConfig, NodePublicConfig},
     types::AuthorityIndex,
     validator::Validator,
 };
@@ -58,6 +58,9 @@ enum Operation {
         /// Path to the file holding the private validator configurations (including keys).
         #[clap(long, value_name = "FILE")]
         private_config_path: String,
+        /// Path to the file holding the client parameters (for benchmarks).
+        #[clap(long, value_name = "FILE")]
+        client_parameters_path: String,
     },
     /// Deploy a local validator for test. Dryrun mode uses default keys and committee configurations.
     DryRun {
@@ -98,12 +101,14 @@ async fn main() -> Result<()> {
             committee_path,
             public_config_path,
             private_config_path,
+            client_parameters_path,
         } => {
             run(
                 authority,
                 committee_path,
                 public_config_path,
                 private_config_path,
+                client_parameters_path,
             )
             .await?
         }
@@ -173,6 +178,7 @@ async fn run(
     committee_path: String,
     public_config_path: String,
     private_config_path: String,
+    client_parameters_path: String,
 ) -> Result<()> {
     tracing::info!("Starting validator {authority}");
 
@@ -183,6 +189,9 @@ async fn run(
     ))?;
     let private_config = NodePrivateConfig::load(&private_config_path).wrap_err(format!(
         "Failed to load private configuration file '{private_config_path}'"
+    ))?;
+    let client_parameters = ClientParameters::load(&client_parameters_path).wrap_err(format!(
+        "Failed to load client parameters file '{client_parameters_path}'"
     ))?;
 
     let committee = Arc::new(committee);
@@ -202,7 +211,14 @@ async fn run(
     binding_metrics_address.set_ip(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
 
     // Boot the validator node.
-    let validator = Validator::start(authority, committee, &public_config, private_config).await?;
+    let validator = Validator::start(
+        authority,
+        committee,
+        &public_config,
+        private_config,
+        client_parameters,
+    )
+    .await?;
     let (network_result, _metrics_result) = validator.await_completion().await;
     network_result.expect("Validator crashed");
     Ok(())
@@ -213,6 +229,7 @@ async fn testbed(committee_size: usize) -> Result<()> {
 
     let committee = Committee::new_for_benchmarks(committee_size);
     let public_config = NodePublicConfig::new_for_tests(committee_size);
+    let client_parameters = ClientParameters::default();
 
     let dir = PathBuf::from("local-testbed");
     match fs::remove_dir_all(&dir) {
@@ -234,8 +251,14 @@ async fn testbed(committee_size: usize) -> Result<()> {
         let authority = i as AuthorityIndex;
         let private_config = NodePrivateConfig::new_for_benchmarks(&dir, authority);
 
-        let validator =
-            Validator::start(authority, committee.clone(), &public_config, private_config).await?;
+        let validator = Validator::start(
+            authority,
+            committee.clone(),
+            &public_config,
+            private_config,
+            client_parameters.clone(),
+        )
+        .await?;
         handles.push(validator.await_completion());
     }
 
@@ -250,6 +273,7 @@ async fn dryrun(authority: AuthorityIndex, committee_size: usize) -> Result<()> 
 
     let committee = Committee::new_for_benchmarks(committee_size);
     let public_config = NodePublicConfig::new_for_tests(committee_size);
+    let client_parameters = ClientParameters::default();
 
     let dir = PathBuf::from(format!("dryrun-validator-{authority}"));
     match fs::remove_dir_all(&dir) {
@@ -265,14 +289,20 @@ async fn dryrun(authority: AuthorityIndex, committee_size: usize) -> Result<()> 
             return Err(e).wrap_err(format!("Failed to create directory '{}'", dir.display()))
         }
     }
-
     let private_config = NodePrivateConfig::new_for_benchmarks(&dir, authority);
-    Validator::start(authority, committee.clone(), &public_config, private_config)
-        .await?
-        .await_completion()
-        .await
-        .0
-        .expect("Validator failed");
+
+    Validator::start(
+        authority,
+        committee.clone(),
+        &public_config,
+        private_config,
+        client_parameters,
+    )
+    .await?
+    .await_completion()
+    .await
+    .0
+    .expect("Validator failed");
 
     Ok(())
 }

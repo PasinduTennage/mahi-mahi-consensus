@@ -16,18 +16,18 @@ use crate::{
     types::{AuthorityIndex, KeyPair, PublicKey, RoundNumber},
 };
 
-pub trait Print: Serialize + DeserializeOwned {
-    fn print<P: AsRef<Path>>(&self, path: P) -> Result<(), io::Error> {
-        let content =
-            serde_yaml::to_string(self).expect("Failed to serialize object to YAML string");
-        fs::write(&path, content)
-    }
-
+pub trait ImportExport: Serialize + DeserializeOwned {
     fn load<P: AsRef<Path>>(path: P) -> Result<Self, io::Error> {
         let content = fs::read_to_string(&path)?;
         let object =
             serde_yaml::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
         Ok(object)
+    }
+
+    fn print<P: AsRef<Path>>(&self, path: P) -> Result<(), io::Error> {
+        let content =
+            serde_yaml::to_string(self).expect("Failed to serialize object to YAML string");
+        fs::write(&path, content)
     }
 }
 
@@ -133,8 +133,12 @@ impl NodePublicConfig {
         }
     }
 
-    pub fn new_for_benchmarks(ips: Vec<IpAddr>) -> Self {
-        Self::new_for_tests(ips.len()).with_ips(ips)
+    pub fn new_for_benchmarks(ips: Vec<IpAddr>, node_parameters: NodeParameters) -> Self {
+        let default_with_ips = Self::new_for_tests(ips.len()).with_ips(ips);
+        Self {
+            identifiers: default_with_ips.identifiers,
+            parameters: node_parameters,
+        }
     }
 
     pub fn with_ips(mut self, ips: Vec<IpAddr>) -> Self {
@@ -178,31 +182,25 @@ impl NodePublicConfig {
     }
 }
 
-impl Print for NodePublicConfig {}
+impl ImportExport for NodePublicConfig {}
 
 #[derive(Serialize, Deserialize)]
 pub struct NodePrivateConfig {
     authority_index: AuthorityIndex,
     keypair: KeyPair,
-    storage_path: StorageDir,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct StorageDir {
-    path: PathBuf,
+    pub storage_path: PathBuf,
 }
 
 impl NodePrivateConfig {
-    pub fn new_for_benchmarks(dir: &Path, authority_index: AuthorityIndex) -> Self {
+    pub fn new_for_benchmarks(storage_path: &Path, authority_index: AuthorityIndex) -> Self {
         // TODO: Once we have a crypto library, generate a keypair from a fixed seed.
         tracing::warn!("Generating a predictable keypair for benchmarking");
-        let path = dir.join(format!("val-{authority_index}"));
+        let path = storage_path.join(format!("val-{authority_index}"));
         fs::create_dir_all(&path).expect("Failed to create validator storage directory");
         Self {
             authority_index,
             keypair: 0,
-            storage_path: StorageDir { path },
+            storage_path: path,
         }
     }
 
@@ -210,23 +208,39 @@ impl NodePrivateConfig {
         ["private", &format!("{authority}.yaml")].iter().collect()
     }
 
-    pub fn storage(&self) -> &StorageDir {
-        &self.storage_path
-    }
-}
-
-impl Print for NodePrivateConfig {}
-
-impl StorageDir {
     pub fn certified_transactions_log(&self) -> PathBuf {
-        self.path.join("certified.txt")
+        self.storage_path.join("certified.txt")
     }
 
     pub fn committed_transactions_log(&self) -> PathBuf {
-        self.path.join("committed.txt")
+        self.storage_path.join("committed.txt")
     }
 
     pub fn wal(&self) -> PathBuf {
-        self.path.join("wal")
+        self.storage_path.join("wal")
     }
 }
+
+impl ImportExport for NodePrivateConfig {}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ClientParameters {
+    /// The number of transactions to send to the network per second.
+    pub load: usize,
+    /// The size of transactions to send to the network in bytes.
+    pub transaction_size: usize,
+    /// The initial delay before starting to send transactions.
+    pub initial_delay: Duration,
+}
+
+impl Default for ClientParameters {
+    fn default() -> Self {
+        Self {
+            load: 10,
+            transaction_size: 512,
+            initial_delay: Duration::from_secs(10),
+        }
+    }
+}
+
+impl ImportExport for ClientParameters {}
