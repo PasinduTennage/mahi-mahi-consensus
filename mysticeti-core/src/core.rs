@@ -1,30 +1,39 @@
-use crate::committee::Committee;
-use crate::crypto::{dummy_signer, Signer};
-use crate::data::Data;
-use crate::epoch_close::EpochManager;
-use crate::metrics::UtilizationTimerVecExt;
-use crate::runtime::timestamp_utc;
-use crate::state::RecoveredState;
-use crate::threshold_clock::ThresholdClockAggregator;
-use crate::types::{AuthorityIndex, BaseStatement, BlockReference, RoundNumber, StatementBlock};
-use crate::wal::{WalPosition, WalSyncer, WalWriter};
-use crate::{
-    block_handler::BlockHandler, consensus::universal_committer::UniversalCommitterBuilder,
+use std::{
+    collections::{HashSet, VecDeque},
+    mem,
+    sync::{atomic::AtomicU64, Arc},
 };
-use crate::{block_manager::BlockManager, metrics::Metrics};
+
+use minibytes::Bytes;
+
 use crate::{
+    block_handler::BlockHandler,
+    block_manager::BlockManager,
     block_store::{
-        BlockStore, BlockWriter, CommitData, OwnBlockData, WAL_ENTRY_COMMIT, WAL_ENTRY_PAYLOAD,
+        BlockStore,
+        BlockWriter,
+        CommitData,
+        OwnBlockData,
+        WAL_ENTRY_COMMIT,
+        WAL_ENTRY_PAYLOAD,
         WAL_ENTRY_STATE,
     },
-    consensus::universal_committer::UniversalCommitter,
+    committee::Committee,
+    config::NodePublicConfig,
+    consensus::{
+        linearizer::CommittedSubDag,
+        universal_committer::{UniversalCommitter, UniversalCommitterBuilder},
+    },
+    crypto::{dummy_signer, Signer},
+    data::Data,
+    epoch_close::EpochManager,
+    metrics::{Metrics, UtilizationTimerVecExt},
+    runtime::timestamp_utc,
+    state::RecoveredState,
+    threshold_clock::ThresholdClockAggregator,
+    types::{AuthorityIndex, BaseStatement, BlockReference, RoundNumber, StatementBlock},
+    wal::{WalPosition, WalSyncer, WalWriter},
 };
-use crate::{config::Parameters, consensus::linearizer::CommittedSubDag};
-use minibytes::Bytes;
-use std::collections::{HashSet, VecDeque};
-use std::mem;
-use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
 
 pub struct Core<H: BlockHandler> {
     block_manager: BlockManager,
@@ -63,7 +72,7 @@ impl<H: BlockHandler> Core<H> {
         mut block_handler: H,
         authority: AuthorityIndex,
         committee: Arc<Committee>,
-        parameters: &Parameters,
+        config: &NodePublicConfig,
         metrics: Arc<Metrics>,
         recovered: RecoveredState,
         mut wal_writer: WalWriter,
@@ -119,11 +128,11 @@ impl<H: BlockHandler> Core<H> {
 
         let committer =
             UniversalCommitterBuilder::new(committee.clone(), block_store.clone(), metrics.clone())
-                .with_number_of_leaders(parameters.number_of_leaders)
-                .with_pipeline(parameters.enable_pipelining)
+                .with_number_of_leaders(config.parameters.number_of_leaders)
+                .with_pipeline(config.parameters.enable_pipelining)
                 .build();
-        tracing::info!("Pipeline enabled: {}", parameters.enable_pipelining);
-        tracing::info!("Number of leaders: {}", parameters.number_of_leaders);
+        tracing::info!("Pipeline enabled: {}", config.parameters.enable_pipelining);
+        tracing::info!("Number of leaders: {}", config.parameters.number_of_leaders);
 
         let mut this = Self {
             block_manager,
@@ -141,7 +150,7 @@ impl<H: BlockHandler> Core<H> {
             signer: dummy_signer(), // todo - load from config
             recovered_committed_blocks: Some((committed_blocks, committed_state)),
             epoch_manager,
-            rounds_in_epoch: parameters.rounds_in_epoch(),
+            rounds_in_epoch: config.parameters.rounds_in_epoch,
             committer,
         };
 
@@ -493,12 +502,15 @@ impl CoreOptions {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::test_util::{committee_and_cores, committee_and_cores_persisted};
-    use crate::threshold_clock;
-    use rand::prelude::StdRng;
-    use rand::{Rng, SeedableRng};
     use std::fmt::Write;
+
+    use rand::{prelude::StdRng, Rng, SeedableRng};
+
+    use super::*;
+    use crate::{
+        test_util::{committee_and_cores, committee_and_cores_persisted},
+        threshold_clock,
+    };
 
     #[test]
     fn test_core_simple_exchange() {

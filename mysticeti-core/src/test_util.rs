@@ -1,32 +1,34 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block_handler::{BlockHandler, TestBlockHandler};
-use crate::block_store::{BlockStore, BlockWriter, OwnBlockData, WAL_ENTRY_BLOCK};
-use crate::committee::Committee;
-use crate::config::Parameters;
-use crate::core::{Core, CoreOptions};
-use crate::data::Data;
-#[cfg(feature = "simulator")]
-use crate::future_simulator::OverrideNodeContext;
-use crate::metrics::MetricReporter;
-use crate::net_sync::NetworkSyncer;
-use crate::network::Network;
-#[cfg(feature = "simulator")]
-use crate::simulated_network::SimulatedNetwork;
-use crate::syncer::{Syncer, SyncerSignals};
-use crate::types::{
-    format_authority_index, AuthorityIndex, BlockReference, RoundNumber, StatementBlock,
+use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    path::Path,
+    sync::Arc,
 };
-use crate::wal::{open_file_for_wal, walf, WalPosition, WalWriter};
-use crate::{block_handler::TestCommitHandler, metrics::Metrics};
+
 use futures::future::join_all;
 use prometheus::Registry;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use std::path::Path;
-use std::sync::Arc;
+use rand::{rngs::StdRng, SeedableRng};
+
+#[cfg(feature = "simulator")]
+use crate::future_simulator::OverrideNodeContext;
+#[cfg(feature = "simulator")]
+use crate::simulated_network::SimulatedNetwork;
+use crate::{
+    block_handler::{BlockHandler, TestBlockHandler, TestCommitHandler},
+    block_store::{BlockStore, BlockWriter, OwnBlockData, WAL_ENTRY_BLOCK},
+    committee::Committee,
+    config::{self, NodePublicConfig},
+    core::{Core, CoreOptions},
+    data::Data,
+    metrics::{MetricReporter, Metrics},
+    net_sync::NetworkSyncer,
+    network::Network,
+    syncer::{Syncer, SyncerSignals},
+    types::{format_authority_index, AuthorityIndex, BlockReference, RoundNumber, StatementBlock},
+    wal::{open_file_for_wal, walf, WalPosition, WalWriter},
+};
 
 pub fn test_metrics() -> Arc<Metrics> {
     Metrics::new(&Registry::new(), None).0
@@ -43,7 +45,7 @@ pub fn committee_and_cores(
     Vec<Core<TestBlockHandler>>,
     Vec<MetricReporter>,
 ) {
-    committee_and_cores_persisted_epoch_duration(n, None, &Parameters::default())
+    committee_and_cores_persisted_epoch_duration(n, None, &&NodePublicConfig::new_for_tests(n))
 }
 
 pub fn committee_and_cores_epoch_duration(
@@ -54,11 +56,9 @@ pub fn committee_and_cores_epoch_duration(
     Vec<Core<TestBlockHandler>>,
     Vec<MetricReporter>,
 ) {
-    let parameters = Parameters {
-        rounds_in_epoch,
-        ..Default::default()
-    };
-    committee_and_cores_persisted_epoch_duration(n, None, &parameters)
+    let mut config = NodePublicConfig::new_for_tests(n);
+    config.parameters.rounds_in_epoch = rounds_in_epoch;
+    committee_and_cores_persisted_epoch_duration(n, None, &config)
 }
 
 pub fn committee_and_cores_persisted(
@@ -69,13 +69,13 @@ pub fn committee_and_cores_persisted(
     Vec<Core<TestBlockHandler>>,
     Vec<MetricReporter>,
 ) {
-    committee_and_cores_persisted_epoch_duration(n, path, &Parameters::default())
+    committee_and_cores_persisted_epoch_duration(n, path, &&NodePublicConfig::new_for_tests(n))
 }
 
 pub fn committee_and_cores_persisted_epoch_duration(
     n: usize,
     path: Option<&Path>,
-    parameters: &Parameters,
+    parameters: &NodePublicConfig,
 ) -> (
     Arc<Committee>,
     Vec<Core<TestBlockHandler>>,
@@ -178,7 +178,7 @@ pub fn simulated_network_syncers(
     Vec<NetworkSyncer<TestBlockHandler, TestCommitHandler>>,
     Vec<MetricReporter>,
 ) {
-    simulated_network_syncers_with_epoch_duration(n, Parameters::DEFAULT_ROUNDS_IN_EPOCH)
+    simulated_network_syncers_with_epoch_duration(n, NodePublicConfig::DEFAULT_ROUNDS_IN_EPOCH)
 }
 
 #[cfg(feature = "simulator")]
@@ -205,7 +205,7 @@ pub fn simulated_network_syncers_with_epoch_duration(
             core,
             3,
             commit_handler,
-            Parameters::DEFAULT_SHUTDOWN_GRACE_PERIOD,
+            NodePublicConfig::DEFAULT_SHUTDOWN_GRACE_PERIOD,
             test_metrics(),
         );
         drop(node_context);
@@ -215,7 +215,7 @@ pub fn simulated_network_syncers_with_epoch_duration(
 }
 
 pub async fn network_syncers(n: usize) -> Vec<NetworkSyncer<TestBlockHandler, TestCommitHandler>> {
-    network_syncers_with_epoch_duration(n, Parameters::DEFAULT_ROUNDS_IN_EPOCH).await
+    network_syncers_with_epoch_duration(n, config::defaults::default_rounds_in_epoch()).await
 }
 
 pub async fn network_syncers_with_epoch_duration(
@@ -237,7 +237,7 @@ pub async fn network_syncers_with_epoch_duration(
             core,
             3,
             commit_handler,
-            Parameters::DEFAULT_SHUTDOWN_GRACE_PERIOD,
+            config::defaults::default_shutdown_grace_period(),
             test_metrics(),
         );
         network_syncers.push(network_syncer);

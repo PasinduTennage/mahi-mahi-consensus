@@ -1,24 +1,32 @@
-use crate::core_thread::CoreThreadDispatcher;
-use crate::network::{Connection, Network, NetworkMessage};
-use crate::runtime::Handle;
-use crate::runtime::{self, timestamp_utc};
-use crate::runtime::{JoinError, JoinHandle};
-use crate::syncer::{CommitObserver, Syncer, SyncerSignals};
-use crate::types::format_authority_index;
-use crate::types::AuthorityIndex;
-use crate::wal::WalSyncer;
-use crate::{block_handler::BlockHandler, metrics::Metrics};
-use crate::{block_store::BlockStore, synchronizer::BlockDisseminator};
-use crate::{committee::Committee, synchronizer::BlockFetcher};
-use crate::{core::Core, synchronizer::SynchronizerParameters};
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
+
 use futures::future::join_all;
-use std::collections::HashMap;
-use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::select;
-use tokio::sync::{mpsc, oneshot, Notify};
+use tokio::{
+    select,
+    sync::{mpsc, oneshot, Notify},
+};
+
+use crate::{
+    block_handler::BlockHandler,
+    block_store::BlockStore,
+    committee::Committee,
+    core::Core,
+    core_thread::CoreThreadDispatcher,
+    metrics::Metrics,
+    network::{Connection, Network, NetworkMessage},
+    runtime::{self, timestamp_utc, Handle, JoinError, JoinHandle},
+    syncer::{CommitObserver, Syncer, SyncerSignals},
+    synchronizer::{BlockDisseminator, BlockFetcher, SynchronizerParameters},
+    types::{format_authority_index, AuthorityIndex},
+    wal::WalSyncer,
+};
 
 /// The maximum number of blocks that can be requested in a single message.
 pub const MAXIMUM_BLOCK_REQUEST: usize = 10;
@@ -399,8 +407,9 @@ impl AsyncWalSyncer {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{check_commits, network_syncers};
     use std::time::Duration;
+
+    use crate::test_util::{check_commits, network_syncers};
 
     #[tokio::test]
     async fn test_network_sync() {
@@ -421,22 +430,30 @@ mod tests {
 #[cfg(test)]
 #[cfg(feature = "simulator")]
 mod sim_tests {
-    use super::NetworkSyncer;
-    use crate::block_handler::{TestBlockHandler, TestCommitHandler};
-    use crate::config::Parameters;
-    use crate::finalization_interpreter::FinalizationInterpreter;
-    use crate::future_simulator::SimulatedExecutorState;
-    use crate::runtime;
-    use crate::simulator_tracing::setup_simulator_tracing;
-    use crate::syncer::Syncer;
-    use crate::test_util::{
-        check_commits, print_stats, rng_at_seed, simulated_network_syncers,
-        simulated_network_syncers_with_epoch_duration,
+    use std::{
+        sync::{atomic::Ordering, Arc},
+        time::Duration,
     };
-    use std::sync::atomic::Ordering;
-    use std::sync::Arc;
-    use std::time::Duration;
+
     use tokio::sync::Notify;
+
+    use super::NetworkSyncer;
+    use crate::{
+        block_handler::{TestBlockHandler, TestCommitHandler},
+        config::NodePublicConfig,
+        finalization_interpreter::FinalizationInterpreter,
+        future_simulator::SimulatedExecutorState,
+        runtime,
+        simulator_tracing::setup_simulator_tracing,
+        syncer::Syncer,
+        test_util::{
+            check_commits,
+            print_stats,
+            rng_at_seed,
+            simulated_network_syncers,
+            simulated_network_syncers_with_epoch_duration,
+        },
+    };
 
     #[test]
     fn test_epoch_close() {

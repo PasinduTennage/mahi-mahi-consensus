@@ -10,7 +10,7 @@ use eyre::{eyre, Context, Result};
 use faults::FaultsType;
 use measurement::MeasurementsCollection;
 use orchestrator::Orchestrator;
-use protocol::mysticeti::{MysticetiClientConfig, MysticetiNodeConfig, MysticetiProtocol};
+use protocol::mysticeti::{MysticetiClientParameters, MysticetiNodeParameters, MysticetiProtocol};
 use settings::{CloudProvider, Settings};
 use ssh::SshConnectionManager;
 use testbed::Testbed;
@@ -31,8 +31,8 @@ pub mod testbed;
 
 /// NOTE: Link these types to the correct protocol.
 type Protocol = MysticetiProtocol;
-type NodeConfig = MysticetiNodeConfig;
-type ClientConfig = MysticetiClientConfig;
+type NodeParameters = MysticetiNodeParameters;
+type ClientParameters = MysticetiClientParameters;
 
 #[derive(Parser)]
 #[command(author, version, about = "Testbed orchestrator", long_about = None)]
@@ -64,11 +64,11 @@ pub enum Operation {
     Benchmark {
         /// The node's parameters.
         #[clap(long, global = true)]
-        node_config: Option<String>,
+        node_parameters_path: Option<String>,
 
         /// The client's parameters.
         #[clap(long, global = true)]
-        client_config: Option<String>,
+        client_parameters_path: Option<String>,
 
         /// The committee size to deploy.
         #[clap(long, value_name = "INT")]
@@ -169,31 +169,6 @@ pub enum TestbedAction {
     Destroy,
 }
 
-// #[derive(Parser)]
-// pub enum Load {
-//     /// The fixed loads (in tx/s) to submit to the nodes.
-//     FixedLoad {
-//         /// A list of fixed load (tx/s).
-//         #[clap(
-//             long,
-//             value_name = "INT",
-//             num_args(1..),
-//             value_delimiter = ','
-//         )]
-//         loads: Vec<usize>,
-//     },
-
-//     /// Search for the maximum load that the system can sustainably handle.
-//     Search {
-//         /// The initial load (in tx/s) to test and use a baseline.
-//         #[clap(long, value_name = "INT", default_value = "250")]
-//         starting_load: usize,
-//         /// The maximum number of iterations before converging on a breaking point.
-//         #[clap(long, value_name = "INT", default_value = "5")]
-//         max_iterations: usize,
-//     },
-// }
-
 fn parse_duration(arg: &str) -> Result<Duration, std::num::ParseIntError> {
     let seconds = arg.parse()?;
     Ok(Duration::from_secs(seconds))
@@ -263,8 +238,8 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
 
         // Run benchmarks.
         Operation::Benchmark {
-            node_config,
-            client_config,
+            node_parameters_path,
+            client_parameters_path,
             committee,
             faults,
             crash_recovery,
@@ -295,17 +270,17 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
                 .wrap_err("Failed to load testbed setup commands")?;
 
             let protocol_commands = Protocol::new(&settings);
-            let node_config = match node_config {
-                Some(config) => NodeConfig::from_str(&config)
+            let node_parameters = match node_parameters_path {
+                Some(parameters) => NodeParameters::from_str(&parameters)
                     .map_err(|e| eyre!(e))
                     .wrap_err("Failed to parse benchmark parameters")?,
-                None => NodeConfig::default(),
+                None => NodeParameters::default(),
             };
-            let client_config = match client_config {
-                Some(config) => ClientConfig::from_str(&config)
+            let client_parameters = match client_parameters_path {
+                Some(parameters) => ClientParameters::from_str(&parameters)
                     .map_err(|e| eyre!(e))
                     .wrap_err("Failed to parse benchmark parameters")?,
-                None => ClientConfig::default(),
+                None => ClientParameters::default(),
             };
 
             let fault_type = if !crash_recovery || faults == 0 {
@@ -317,11 +292,11 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
                 }
             };
 
-            let set_of_parameters = BenchmarkParameters::new_from_loads(
-                node_config.clone(),
-                client_config.clone(),
+            let set_of_benchmark_parameters = BenchmarkParameters::new_from_loads(
+                node_parameters,
+                client_parameters,
                 committee,
-                fault_type.clone(),
+                fault_type,
                 loads,
                 duration,
             );
@@ -340,7 +315,7 @@ async fn run<C: ServerProviderClient>(settings: Settings, client: C, opts: Opts)
             .with_log_processing(log_processing)
             .with_dedicated_clients(dedicated_clients)
             .with_monitoring(monitoring)
-            .run_benchmarks(set_of_parameters)
+            .run_benchmarks(set_of_benchmark_parameters)
             .await
             .wrap_err("Failed to run benchmarks")?;
         }

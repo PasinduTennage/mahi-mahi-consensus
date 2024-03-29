@@ -6,6 +6,7 @@ use std::{
     fmt::{Debug, Display},
     fs,
     net::IpAddr,
+    num::ParseIntError,
     ops::Deref,
     path::PathBuf,
     str::FromStr,
@@ -13,11 +14,12 @@ use std::{
 
 use mysticeti_core::{
     committee::Committee,
-    config::{self, Parameters, PrivateConfig},
+    config::{self, NodeParameters, NodePrivateConfig, NodePublicConfig},
     types::AuthorityIndex,
 };
 use serde::{Deserialize, Serialize};
 
+use super::{ProtocolCommands, ProtocolMetrics, CARGO_FLAGS, RUST_FLAGS};
 use crate::{
     benchmark::{BenchmarkParameters, Config},
     client::Instance,
@@ -25,50 +27,46 @@ use crate::{
     settings::Settings,
 };
 
-use super::{ProtocolCommands, ProtocolMetrics, CARGO_FLAGS, RUST_FLAGS};
-
 const DEFAULT_NODE_CONFIG_PATH: &str = "orchestrator/assets/node-config.json";
-const DEFAULT_CLIENT_CONFIG_PATH: &str = "orchestrator/assets/client-config.json";
 
 #[derive(Serialize, Deserialize, Clone, Default)]
-pub struct MysticetiNodeConfig(Parameters);
+pub struct MysticetiNodeParameters(NodeParameters);
 
-impl Deref for MysticetiNodeConfig {
-    type Target = Parameters;
+impl Deref for MysticetiNodeParameters {
+    type Target = NodeParameters;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl Debug for MysticetiNodeConfig {
+impl Debug for MysticetiNodeParameters {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.benchmark_transaction_size)
-    }
-}
-
-impl Display for MysticetiNodeConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let consensus_only = if self.consensus_only {
-            " (consensus-only)"
+        if self.consensus_only {
+            write!(f, "c")
         } else {
-            ""
-        };
-        write!(
-            f,
-            "{}B transactions{consensus_only}",
-            self.benchmark_transaction_size
-        )
+            write!(f, "fpc")
+        }
     }
 }
 
-impl FromStr for MysticetiNodeConfig {
+impl Display for MysticetiNodeParameters {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.consensus_only {
+            write!(f, "Consensus-only mode")
+        } else {
+            write!(f, "FPC mode")
+        }
+    }
+}
+
+impl FromStr for MysticetiNodeParameters {
     type Err = SettingsError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let reader = || -> Result<Self, std::io::Error> {
             let data = fs::read(s)?;
-            let settings: MysticetiNodeConfig = serde_json::from_slice(&data)?;
+            let settings: MysticetiNodeParameters = serde_json::from_slice(&data)?;
             Ok(settings)
         };
 
@@ -79,50 +77,52 @@ impl FromStr for MysticetiNodeConfig {
     }
 }
 
-impl Config for MysticetiNodeConfig {}
+impl Config for MysticetiNodeParameters {}
 
-#[derive(Serialize, Deserialize, Clone, Default)]
-pub struct MysticetiClientConfig {
+#[derive(Serialize, Deserialize, Clone)]
+pub struct MysticetiClientParameters {
+    /// The size of transactions to send to the network in bytes.
     pub transaction_size: usize,
 }
 
-impl Debug for MysticetiClientConfig {
+impl Default for MysticetiClientParameters {
+    fn default() -> Self {
+        Self {
+            transaction_size: 512,
+        }
+    }
+}
+
+impl Debug for MysticetiClientParameters {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.transaction_size)
     }
 }
 
-impl Display for MysticetiClientConfig {
+impl Display for MysticetiClientParameters {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}B transactions", self.transaction_size)
     }
 }
 
-impl FromStr for MysticetiClientConfig {
-    type Err = SettingsError;
+impl FromStr for MysticetiClientParameters {
+    type Err = ParseIntError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let reader = || -> Result<Self, std::io::Error> {
-            let data = fs::read(s)?;
-            let settings: MysticetiClientConfig = serde_json::from_slice(&data)?;
-            Ok(settings)
-        };
-
-        reader().map_err(|e| SettingsError::InvalidSettings {
-            file: s.to_string(),
-            message: e.to_string(),
+        Ok(Self {
+            transaction_size: s.parse()?,
         })
     }
 }
 
-impl Config for MysticetiClientConfig {}
+impl Config for MysticetiClientParameters {}
 
 /// All configurations information to run a Mysticeti client or validator.
 pub struct MysticetiProtocol {
     working_dir: PathBuf,
 }
 
-impl ProtocolCommands<MysticetiNodeConfig, MysticetiClientConfig> for MysticetiProtocol {
+impl ProtocolCommands<MysticetiNodeParameters, MysticetiClientParameters> for MysticetiProtocol {
     fn protocol_dependencies(&self) -> Vec<&'static str> {
         vec![]
     }
@@ -141,7 +141,6 @@ impl ProtocolCommands<MysticetiNodeConfig, MysticetiClientConfig> for MysticetiP
         I: Iterator<Item = &'a Instance>,
     {
         // 1. Upload node config to all instances. Get them from file and add ip addresses.
-        // 2. Upload client config to all instances. Get them from CLI args.
         // 3. Run the genesis command on all instances to generate the private configuration file and committee file.
 
         let ips = instances
@@ -150,12 +149,12 @@ impl ProtocolCommands<MysticetiNodeConfig, MysticetiClientConfig> for MysticetiP
             .join(" ");
         let working_directory = self.working_dir.display();
 
-        let enable_pipeline = if parameters.node_config.enable_pipelining {
+        let enable_pipeline = if parameters.node_parameters.enable_pipelining {
             "--enable-pipeline"
         } else {
             ""
         };
-        let number_of_leaders = parameters.node_config.number_of_leaders;
+        let number_of_leaders = parameters.node_parameters.number_of_leaders;
 
         let genesis = [
             &format!("{RUST_FLAGS} cargo run {CARGO_FLAGS} --bin mysticeti --"),
@@ -191,56 +190,59 @@ impl ProtocolCommands<MysticetiNodeConfig, MysticetiClientConfig> for MysticetiP
     where
         I: IntoIterator<Item = Instance>,
     {
-        instances
-            .into_iter()
-            .enumerate()
-            .map(|(i, instance)| {
-                let authority = i as AuthorityIndex;
-                let committee_path: PathBuf =
-                    [&self.working_dir, &Committee::DEFAULT_FILENAME.into()]
-                        .iter()
-                        .collect();
-                let parameters_path: PathBuf =
-                    [&self.working_dir, &Parameters::DEFAULT_FILENAME.into()]
-                        .iter()
-                        .collect();
-                let private_configs_path: PathBuf = [
-                    &self.working_dir,
-                    &PrivateConfig::default_filename(authority),
-                ]
-                .iter()
-                .collect();
+        todo!();
 
-                let env = env::var("ENV").unwrap_or_default();
-                let run = [
-                    &env,
-                    &format!("{RUST_FLAGS} cargo run {CARGO_FLAGS} --bin mysticeti --"),
-                    "run",
-                    &format!(
-                        "--authority {authority} --committee-path {}",
-                        committee_path.display()
-                    ),
-                    &format!(
-                        "--parameters-path {} --private-config-path {}",
-                        parameters_path.display(),
-                        private_configs_path.display()
-                    ),
-                ]
-                .join(" ");
-                let tps = format!("export TPS={}", parameters.load / parameters.nodes);
-                let tx_size = format!("export TRANSACTION_SIZE={}", parameters.node_config.benchmark_transaction_size);
-                let consensus_only = if parameters.node_config.consensus_only {
-                    format!("export CONSENSUS_ONLY={}", 1)
-                } else {
-                    "".to_string()
-                };
-                let syncer = format!("export USE_SYNCER={}", 1);
-                let command = ["#!/bin/bash -e", "source $HOME/.cargo/env", &tps, &tx_size, &consensus_only, &syncer, &run].join("\\n");
-                let command = format!("echo -e '{command}' > mysticeti-start.sh && chmod +x mysticeti-start.sh && ./mysticeti-start.sh");
+        // instances
+        //     .into_iter()
+        //     .enumerate()
+        //     .map(|(i, instance)| {
+        //         let authority = i as AuthorityIndex;
+        //         let committee_path: PathBuf =
+        //             [&self.working_dir, &Committee::DEFAULT_FILENAME.into()]
+        //                 .iter()
+        //                 .collect();
+        //         let parameters_path: PathBuf =
+        //             [&self.working_dir, &ValidatorPublicParameters::DEFAULT_FILENAME.into()]
+        //                 .iter()
+        //                 .collect();
+        //         let private_configs_path: PathBuf = [
+        //             &self.working_dir,
+        //             &PrivateConfig::default_filename(authority),
+        //         ]
+        //         .iter()
+        //         .collect();
 
-                (instance, command)
-            })
-            .collect()
+        //         let env = env::var("ENV").unwrap_or_default();
+        //         let run = [
+        //             &env,
+        //             &format!("{RUST_FLAGS} cargo run {CARGO_FLAGS} --bin mysticeti --"),
+        //             "run",
+        //             &format!(
+        //                 "--authority {authority} --committee-path {}",
+        //                 committee_path.display()
+        //             ),
+        //             &format!(
+        //                 "--parameters-path {} --private-config-path {}",
+        //                 parameters_path.display(),
+        //                 private_configs_path.display()
+        //             ),
+        //         ]
+        //         .join(" ");
+        //         let tps = format!("export TPS={}", parameters.load / parameters.nodes);
+
+        //         let tx_size = format!("export TRANSACTION_SIZE={}", parameters.node_config.benchmark_transaction_size);
+        //         let consensus_only = if parameters.node_config.consensus_only {
+        //             format!("export CONSENSUS_ONLY={}", 1)
+        //         } else {
+        //             "".to_string()
+        //         };
+        //         let syncer = format!("export USE_SYNCER={}", 1);
+        //         let command = ["#!/bin/bash -e", "source $HOME/.cargo/env", &tps, &tx_size, &consensus_only, &syncer, &run].join("\\n");
+        //         let command = format!("echo -e '{command}' > mysticeti-start.sh && chmod +x mysticeti-start.sh && ./mysticeti-start.sh");
+
+        //         (instance, command)
+        //     })
+        //     .collect()
     }
 
     fn client_command<I>(
@@ -276,16 +278,17 @@ impl ProtocolMetrics for MysticetiProtocol {
     where
         I: IntoIterator<Item = Instance>,
     {
-        let (ips, instances): (_, Vec<_>) = instances
-            .into_iter()
-            .map(|x| (IpAddr::V4(x.main_ip), x))
-            .unzip();
-        let parameters = config::Parameters::new_for_benchmarks(ips);
-        let metrics_paths = parameters
-            .all_metric_addresses()
-            .map(|x| format!("{x}{}", mysticeti_core::prometheus::METRICS_ROUTE));
+        // let (ips, instances): (_, Vec<_>) = instances
+        //     .into_iter()
+        //     .map(|x| (IpAddr::V4(x.main_ip), x))
+        //     .unzip();
+        // let parameters = config::ValidatorPublicParameters::new_for_tests(ips);
+        // let metrics_paths = parameters
+        //     .all_metric_addresses()
+        //     .map(|x| format!("{x}{}", mysticeti_core::prometheus::METRICS_ROUTE));
 
-        instances.into_iter().zip(metrics_paths).collect()
+        // instances.into_iter().zip(metrics_paths).collect()
+        todo!()
     }
 
     fn clients_metrics_path<I>(&self, instances: I) -> Vec<(Instance, String)>

@@ -2,16 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::{
-    fs, io,
-    net::{IpAddr, SocketAddr},
+    fs,
+    io,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
     time::Duration,
 };
 
-use crate::crypto::dummy_public_key;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::types::{AuthorityIndex, KeyPair, PublicKey, RoundNumber};
+use crate::{
+    crypto::dummy_public_key,
+    types::{AuthorityIndex, KeyPair, PublicKey, RoundNumber},
+};
 
 pub trait Print: Serialize + DeserializeOwned {
     fn print<P: AsRef<Path>>(&self, path: P) -> Result<(), io::Error> {
@@ -28,77 +31,118 @@ pub trait Print: Serialize + DeserializeOwned {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NodeParameters {
+    #[serde(default = "defaults::default_wave_length")]
+    pub wave_length: RoundNumber,
+    #[serde(default = "defaults::default_leader_timeout")]
+    pub leader_timeout: Duration,
+    #[serde(default = "defaults::default_rounds_in_epoch")]
+    pub rounds_in_epoch: RoundNumber,
+    #[serde(default = "defaults::default_shutdown_grace_period")]
+    pub shutdown_grace_period: Duration,
+    #[serde(default = "defaults::default_number_of_leaders")]
+    pub number_of_leaders: usize,
+    #[serde(default = "defaults::default_enable_pipelining")]
+    pub enable_pipelining: bool,
+    #[serde(default = "defaults::default_consensus_only")]
+    pub consensus_only: bool,
+}
+
+pub mod defaults {
+    pub fn default_wave_length() -> super::RoundNumber {
+        3
+    }
+
+    pub fn default_leader_timeout() -> std::time::Duration {
+        std::time::Duration::from_secs(2)
+    }
+
+    pub fn default_rounds_in_epoch() -> super::RoundNumber {
+        3_600_000
+    }
+
+    pub fn default_shutdown_grace_period() -> std::time::Duration {
+        std::time::Duration::from_secs(2)
+    }
+
+    pub fn default_number_of_leaders() -> usize {
+        2
+    }
+
+    pub fn default_enable_pipelining() -> bool {
+        true
+    }
+
+    pub fn default_consensus_only() -> bool {
+        true
+    }
+}
+
+impl Default for NodeParameters {
+    fn default() -> Self {
+        Self {
+            wave_length: defaults::default_wave_length(),
+            leader_timeout: defaults::default_leader_timeout(),
+            rounds_in_epoch: defaults::default_rounds_in_epoch(),
+            shutdown_grace_period: defaults::default_shutdown_grace_period(),
+            number_of_leaders: defaults::default_number_of_leaders(),
+            enable_pipelining: defaults::default_enable_pipelining(),
+            consensus_only: defaults::default_consensus_only(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Identifier {
+pub struct NodeIdentifier {
     pub public_key: PublicKey,
     pub network_address: SocketAddr,
     pub metrics_address: SocketAddr,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Parameters {
-    pub identifiers: Vec<Identifier>,
-    pub wave_length: RoundNumber,
-    pub leader_timeout: Duration,
-    pub rounds_in_epoch: RoundNumber,
-    pub shutdown_grace_period: Duration,
-    pub number_of_leaders: usize,
-    pub enable_pipelining: bool,
-    pub consensus_only: bool,
-    /// The size of the transactions to use in benchmarks.
-    pub benchmark_transaction_size: usize,
+pub struct NodePublicConfig {
+    pub identifiers: Vec<NodeIdentifier>,
+    pub parameters: NodeParameters,
 }
 
-impl Default for Parameters {
-    fn default() -> Self {
-        Self {
-            identifiers: Vec::new(),
-            wave_length: Self::DEFAULT_WAVE_LENGTH,
-            leader_timeout: Self::DEFAULT_LEADER_TIMEOUT,
-            rounds_in_epoch: Self::DEFAULT_ROUNDS_IN_EPOCH,
-            shutdown_grace_period: Self::DEFAULT_SHUTDOWN_GRACE_PERIOD,
-            number_of_leaders: Self::DEFAULT_NUMBER_OF_LEADERS,
-            enable_pipelining: true,
-            consensus_only: true,
-            benchmark_transaction_size: Self::BENCHMARK_TRANSACTION_SIZE,
-        }
-    }
-}
-
-impl Parameters {
+impl NodePublicConfig {
     pub const DEFAULT_FILENAME: &'static str = "parameters.yaml";
+    pub const PORT_OFFSET_FOR_TESTS: u16 = 1500;
 
-    pub const DEFAULT_WAVE_LENGTH: RoundNumber = 3;
-    pub const DEFAULT_LEADER_TIMEOUT: Duration = Duration::from_secs(2);
-
-    pub const BENCHMARK_PORT_OFFSET: u16 = 1500;
-    pub const BENCHMARK_TRANSACTION_SIZE: usize = 512;
-
-    // needs to be sufficiently long to run benchmarks
-    pub const DEFAULT_ROUNDS_IN_EPOCH: u64 = 3_600_000;
-    pub const DEFAULT_SHUTDOWN_GRACE_PERIOD: Duration = Duration::from_secs(2);
-
-    pub const DEFAULT_NUMBER_OF_LEADERS: usize = 2;
-
-    pub fn new_for_benchmarks(ips: Vec<IpAddr>) -> Self {
+    pub fn new_for_tests(committee_size: usize) -> Self {
+        let ips = vec![IpAddr::V4(Ipv4Addr::LOCALHOST); committee_size];
         let benchmark_port_offset = ips.len() as u16;
         let mut identifiers = Vec::new();
         for (i, ip) in ips.into_iter().enumerate() {
             let public_key = dummy_public_key(); // todo - fix
-            let network_port = Self::BENCHMARK_PORT_OFFSET + i as u16;
+            let network_port = Self::PORT_OFFSET_FOR_TESTS + i as u16;
             let metrics_port = benchmark_port_offset + network_port;
             let network_address = SocketAddr::new(ip, network_port);
             let metrics_address = SocketAddr::new(ip, metrics_port);
-            identifiers.push(Identifier {
+            identifiers.push(NodeIdentifier {
                 public_key,
                 network_address,
                 metrics_address,
             });
         }
+
         Self {
             identifiers,
-            ..Default::default()
+            parameters: NodeParameters::default(),
         }
+    }
+
+    pub fn new_for_benchmarks(ips: Vec<IpAddr>) -> Self {
+        Self::new_for_tests(ips.len()).with_ips(ips)
+    }
+
+    pub fn with_ips(mut self, ips: Vec<IpAddr>) -> Self {
+        for (id, ip) in self.identifiers.iter_mut().zip(ips) {
+            id.network_address.set_ip(ip);
+            id.metrics_address.set_ip(ip);
+        }
+        self
     }
 
     pub fn with_port_offset(mut self, port_offset: u16) -> Self {
@@ -108,16 +152,6 @@ impl Parameters {
             id.metrics_address
                 .set_port(id.metrics_address.port() + port_offset);
         }
-        self
-    }
-
-    pub fn with_number_of_leaders(mut self, number_of_leaders: usize) -> Self {
-        self.number_of_leaders = number_of_leaders;
-        self
-    }
-
-    pub fn with_pipeline(mut self, enable_pipelining: bool) -> Self {
-        self.enable_pipelining = enable_pipelining;
         self
     }
 
@@ -142,24 +176,12 @@ impl Parameters {
             .get(authority as usize)
             .map(|id| id.metrics_address)
     }
-
-    pub fn wave_length(&self) -> RoundNumber {
-        self.wave_length
-    }
-
-    pub fn shutdown_grace_period(&self) -> Duration {
-        self.shutdown_grace_period
-    }
-
-    pub fn rounds_in_epoch(&self) -> RoundNumber {
-        self.rounds_in_epoch
-    }
 }
 
-impl Print for Parameters {}
+impl Print for NodePublicConfig {}
 
 #[derive(Serialize, Deserialize)]
-pub struct PrivateConfig {
+pub struct NodePrivateConfig {
     authority_index: AuthorityIndex,
     keypair: KeyPair,
     storage_path: StorageDir,
@@ -171,7 +193,7 @@ pub struct StorageDir {
     path: PathBuf,
 }
 
-impl PrivateConfig {
+impl NodePrivateConfig {
     pub fn new_for_benchmarks(dir: &Path, authority_index: AuthorityIndex) -> Self {
         // TODO: Once we have a crypto library, generate a keypair from a fixed seed.
         tracing::warn!("Generating a predictable keypair for benchmarking");
@@ -193,7 +215,7 @@ impl PrivateConfig {
     }
 }
 
-impl Print for PrivateConfig {}
+impl Print for NodePrivateConfig {}
 
 impl StorageDir {
     pub fn certified_transactions_log(&self) -> PathBuf {

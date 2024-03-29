@@ -17,7 +17,8 @@ use tokio::{
 use crate::{
     benchmark::BenchmarkParameters,
     client::Instance,
-    display, ensure,
+    display,
+    ensure,
     error::{TestbedError, TestbedResult},
     faults::CrashRecoverySchedule,
     logs::LogsAnalyzer,
@@ -671,7 +672,7 @@ impl<P: ProtocolCommands<N, C> + ProtocolMetrics, N, C> Orchestrator<P, N, C> {
         let mut latest_committee_size = 0;
         for parameters in set_of_parameters {
             display::header(format!("Starting benchmark {i}"));
-            display::config("Node Parameters", &parameters.node_config);
+            display::config("Node Parameters", &parameters.node_parameters);
             display::config("Benchmark Parameters", &parameters);
             display::newline();
 

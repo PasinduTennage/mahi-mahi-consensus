@@ -8,19 +8,19 @@ use std::{
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::{faults::FaultsType, ClientConfig, NodeConfig};
+use crate::{faults::FaultsType, ClientParameters, NodeParameters};
 
 pub trait Config: Default + Clone + Serialize + DeserializeOwned + Debug + Display {}
 
-pub type BenchmarkParameters = BenchmarkParametersGeneric<NodeConfig, ClientConfig>;
+pub type BenchmarkParameters = BenchmarkParametersGeneric<NodeParameters, ClientParameters>;
 
 /// The benchmark parameters for a run.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct BenchmarkParametersGeneric<N, C> {
     /// The node's configuration parameters.
-    pub node_config: N,
+    pub node_parameters: N,
     /// The client's configuration parameters.
-    pub client_config: C,
+    pub client_parameters: C,
     /// The committee size.
     pub nodes: usize,
     /// The number of (crash-)faults.
@@ -31,25 +31,12 @@ pub struct BenchmarkParametersGeneric<N, C> {
     pub duration: Duration,
 }
 
-impl<N: Default, C: Default> Default for BenchmarkParametersGeneric<N, C> {
-    fn default() -> Self {
-        Self {
-            node_config: N::default(),
-            client_config: C::default(),
-            nodes: 4,
-            faults: FaultsType::default(),
-            load: 500,
-            duration: Duration::from_secs(60),
-        }
-    }
-}
-
 impl<N: Debug, C> Debug for BenchmarkParametersGeneric<N, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{:?}-{:?}-{}-{}",
-            self.node_config, self.faults, self.nodes, self.load
+            self.node_parameters, self.faults, self.nodes, self.load
         )
     }
 }
@@ -64,13 +51,11 @@ impl<N, C> Display for BenchmarkParametersGeneric<N, C> {
     }
 }
 
-// Requiring `N` and `C` to be `Config` is not necessary, but clarifies error messages if the user forgets to
-// implement the `Config` trait for `N` and `C`.
 impl<N: Config, C: Config> BenchmarkParametersGeneric<N, C> {
     /// Make a new benchmark parameters.
     pub fn new_from_loads(
-        node_config: N,
-        client_config: C,
+        node_parameters: N,
+        client_parameters: C,
         nodes: usize,
         faults: FaultsType,
         loads: Vec<usize>,
@@ -79,14 +64,26 @@ impl<N: Config, C: Config> BenchmarkParametersGeneric<N, C> {
         loads
             .into_iter()
             .map(|load| Self {
-                node_config: node_config.clone(),
-                client_config: client_config.clone(),
+                node_parameters: node_parameters.clone(),
+                client_parameters: client_parameters.clone(),
                 nodes,
                 faults: faults.clone(),
                 load,
                 duration,
             })
             .collect()
+    }
+
+    #[cfg(test)]
+    pub fn new_for_tests() -> Self {
+        Self {
+            node_parameters: N::default(),
+            client_parameters: C::default(),
+            nodes: 4,
+            faults: FaultsType::default(),
+            load: 500,
+            duration: Duration::from_secs(60),
+        }
     }
 }
 
@@ -278,7 +275,6 @@ pub mod test {
     //     measurement::{Measurement, MeasurementsCollection},
     //     settings::Settings,
     // };
-
     use super::Config;
 
     /// Mock benchmark type for unit tests.

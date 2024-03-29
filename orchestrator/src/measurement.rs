@@ -15,7 +15,10 @@ use prometheus_parse::Scrape;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    benchmark::BenchmarkParameters, display, protocol::ProtocolMetrics, settings::Settings,
+    benchmark::BenchmarkParameters,
+    display,
+    protocol::ProtocolMetrics,
+    settings::Settings,
 };
 
 /// The identifier of prometheus latency buckets.
@@ -285,7 +288,7 @@ impl MeasurementsCollection {
         let duration = self.benchmark_duration();
 
         table.set_titles(row![bH2->"Benchmark Summary"]);
-        table.add_row(row![b->"Benchmark type:", self.parameters.node_config]);
+        table.add_row(row![b->"Benchmark type:", self.parameters.node_parameters]);
         table.add_row(row![bH2->""]);
         table.add_row(row![b->"Nodes:", self.parameters.nodes]);
         table.add_row(row![b->"Faults:", self.parameters.faults]);
@@ -316,9 +319,8 @@ impl MeasurementsCollection {
 mod test {
     use std::{collections::HashMap, time::Duration};
 
-    use crate::{protocol::test_protocol_metrics::TestProtocolMetrics, settings::Settings};
-
     use super::{BenchmarkParameters, Measurement, MeasurementsCollection};
+    use crate::{protocol::test_protocol_metrics::TestProtocolMetrics, settings::Settings};
 
     #[test]
     fn average_latency() {
@@ -408,7 +410,8 @@ mod test {
 
         let measurements = Measurement::from_prometheus::<TestProtocolMetrics>(report);
         let settings = Settings::new_for_test();
-        let mut aggregator = MeasurementsCollection::new(&settings, BenchmarkParameters::default());
+        let mut aggregator =
+            MeasurementsCollection::new(&settings, BenchmarkParameters::new_for_tests());
         let scraper_id = 1;
         for (label, measurement) in measurements {
             aggregator.add(scraper_id, label, measurement);

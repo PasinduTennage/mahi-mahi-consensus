@@ -1,31 +1,36 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::stat::HistogramSender;
-use crate::types::{AuthorityIndex, RoundNumber, StatementBlock};
-use crate::{config::Parameters, data::Data, runtime};
-use crate::{
-    metrics::{print_network_address_table, Metrics},
-    types::BlockReference,
+use std::{collections::HashMap, io, net::SocketAddr, ops::Range, sync::Arc, time::Duration};
+
+use futures::{
+    future::{select, select_all, Either},
+    FutureExt,
 };
-use futures::future::{select, select_all, Either};
-use futures::FutureExt;
-use rand::prelude::ThreadRng;
-use rand::Rng;
+use rand::{prelude::ThreadRng, Rng};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::io;
-use std::net::SocketAddr;
-use std::ops::Range;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
-use tokio::net::{TcpListener, TcpSocket, TcpStream};
-use tokio::runtime::Handle;
-use tokio::select;
-use tokio::sync::mpsc;
-use tokio::time::Instant;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::{
+        tcp::{OwnedReadHalf, OwnedWriteHalf},
+        TcpListener,
+        TcpSocket,
+        TcpStream,
+    },
+    runtime::Handle,
+    select,
+    sync::mpsc,
+    time::Instant,
+};
+
+use crate::{
+    config::NodePublicConfig,
+    data::Data,
+    metrics::{print_network_address_table, Metrics},
+    runtime,
+    stat::HistogramSender,
+    types::{AuthorityIndex, BlockReference, RoundNumber, StatementBlock},
+};
 
 const PING_INTERVAL: Duration = Duration::from_secs(30);
 
@@ -58,7 +63,7 @@ impl Network {
     }
 
     pub async fn load(
-        parameters: &Parameters,
+        parameters: &NodePublicConfig,
         our_id: AuthorityIndex,
         local_addr: SocketAddr,
         metrics: Arc<Metrics>,
@@ -438,11 +443,11 @@ fn decode_ping(message: &[u8]) -> i64 {
 
 #[cfg(test)]
 mod test {
-    use crate::committee::Committee;
-    use crate::metrics::Metrics;
-    use crate::test_util::networks_and_addresses;
-    use prometheus::Registry;
     use std::collections::HashSet;
+
+    use prometheus::Registry;
+
+    use crate::{committee::Committee, metrics::Metrics, test_util::networks_and_addresses};
 
     #[ignore]
     #[tokio::test]

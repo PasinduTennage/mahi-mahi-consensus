@@ -1,32 +1,33 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::time::Duration;
 use std::{
     env,
     net::{IpAddr, Ipv4Addr},
     sync::Arc,
+    time::Duration,
 };
 
 use ::prometheus::Registry;
 use eyre::{eyre, Context, Result};
 
-use crate::wal::walf;
 use crate::{
     block_handler::{RealBlockHandler, TestCommitHandler},
+    block_store::BlockStore,
     committee::Committee,
-    config::{Parameters, PrivateConfig},
-    core::Core,
+    config::{NodePrivateConfig, NodePublicConfig},
+    core::{Core, CoreOptions},
+    log::TransactionLog,
     metrics::Metrics,
     net_sync::NetworkSyncer,
     network::Network,
     prometheus,
     runtime::{JoinError, JoinHandle},
+    transactions_generator::TransactionGenerator,
     types::AuthorityIndex,
     wal,
+    wal::walf,
 };
-use crate::{block_store::BlockStore, log::TransactionLog};
-use crate::{core::CoreOptions, transactions_generator::TransactionGenerator};
 
 pub struct Validator {
     network_synchronizer: NetworkSyncer<RealBlockHandler, TestCommitHandler<TransactionLog>>,
@@ -37,17 +38,17 @@ impl Validator {
     pub async fn start(
         authority: AuthorityIndex,
         committee: Arc<Committee>,
-        parameters: &Parameters,
-        config: PrivateConfig,
+        public_config: &NodePublicConfig,
+        private_config: NodePrivateConfig,
     ) -> Result<Self> {
-        let network_address = parameters
+        let network_address = public_config
             .network_address(authority)
             .ok_or(eyre!("No network address for authority {authority}"))
             .wrap_err("Unknown authority")?;
         let mut binding_network_address = network_address;
         binding_network_address.set_ip(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
 
-        let metrics_address = parameters
+        let metrics_address = public_config
             .metrics_address(authority)
             .ok_or(eyre!("No metrics address for authority {authority}"))
             .wrap_err("Unknown authority")?;
@@ -63,8 +64,8 @@ impl Validator {
             prometheus::start_prometheus_server(binding_metrics_address, &registry);
 
         // Open the block store.
-        let wal_file =
-            wal::open_file_for_wal(config.storage().wal()).expect("Failed to open wal file");
+        let wal_file = wal::open_file_for_wal(private_config.storage().wal())
+            .expect("Failed to open wal file");
         let (wal_writer, wal_reader) = walf(wal_file).expect("Failed to open wal");
         let recovered = BlockStore::open(
             authority,
@@ -78,7 +79,7 @@ impl Validator {
         let (block_handler, block_sender) = RealBlockHandler::new(
             committee.clone(),
             authority,
-            config.storage(),
+            private_config.storage(),
             recovered.block_store.clone(),
             metrics.clone(),
         );
@@ -109,7 +110,7 @@ impl Validator {
             initial_delay,
         );
         let committed_transaction_log =
-            TransactionLog::start(config.storage().committed_transactions_log())
+            TransactionLog::start(private_config.storage().committed_transactions_log())
                 .expect("Failed to open committed transaction log for write");
         let commit_handler = TestCommitHandler::new_with_handler(
             committee.clone(),
@@ -121,14 +122,14 @@ impl Validator {
             block_handler,
             authority,
             committee.clone(),
-            parameters,
+            public_config,
             metrics.clone(),
             recovered,
             wal_writer,
             CoreOptions::default(),
         );
         let network = Network::load(
-            parameters,
+            public_config,
             authority,
             binding_network_address,
             metrics.clone(),
@@ -137,9 +138,9 @@ impl Validator {
         let network_synchronizer = NetworkSyncer::start(
             network,
             core,
-            parameters.wave_length(),
+            public_config.parameters.wave_length,
             commit_handler,
-            parameters.shutdown_grace_period(),
+            public_config.parameters.shutdown_grace_period,
             metrics,
         );
 
@@ -171,23 +172,18 @@ impl Validator {
 
 #[cfg(test)]
 mod smoke_tests {
-    use std::{
-        collections::VecDeque,
-        net::{IpAddr, Ipv4Addr, SocketAddr},
-        time::Duration,
-    };
-    use tempdir::TempDir;
+    use std::{collections::VecDeque, net::SocketAddr, time::Duration};
 
+    use tempdir::TempDir;
     use tokio::time;
 
+    use super::Validator;
     use crate::{
         committee::Committee,
-        config::{Parameters, PrivateConfig},
+        config::{self, NodePrivateConfig, NodePublicConfig},
         prometheus,
         types::AuthorityIndex,
     };
-
-    use super::Validator;
 
     /// Check whether the validator specified by its metrics address has committed at least once.
     async fn check_commit(address: &SocketAddr) -> Result<bool, reqwest::Error> {
@@ -214,16 +210,14 @@ mod smoke_tests {
     #[tokio::test]
     async fn validator_commit() {
         let committee_size = 4;
-        let ips = vec![IpAddr::V4(Ipv4Addr::LOCALHOST); committee_size];
-
         let committee = Committee::new_for_benchmarks(committee_size);
-        let parameters = Parameters::new_for_benchmarks(ips).with_port_offset(0);
+        let parameters = NodePublicConfig::new_for_tests(committee_size).with_port_offset(0);
 
         let mut handles = Vec::new();
         let tempdir = TempDir::new("validator_commit").unwrap();
         for i in 0..committee_size {
             let authority = i as AuthorityIndex;
-            let private = PrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+            let private = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
 
             let validator = Validator::start(authority, committee.clone(), &parameters, private)
                 .await
@@ -235,7 +229,7 @@ mod smoke_tests {
             .all_metric_addresses()
             .map(|address| address.to_owned())
             .collect();
-        let timeout = Parameters::DEFAULT_LEADER_TIMEOUT * 5;
+        let timeout = config::defaults::default_leader_timeout() * 5;
 
         tokio::select! {
             _ = await_for_commits(addresses) => (),
@@ -247,10 +241,8 @@ mod smoke_tests {
     #[tokio::test]
     async fn validator_sync() {
         let committee_size = 4;
-        let ips = vec![IpAddr::V4(Ipv4Addr::LOCALHOST); committee_size];
-
         let committee = Committee::new_for_benchmarks(committee_size);
-        let parameters = Parameters::new_for_benchmarks(ips).with_port_offset(100);
+        let parameters = NodePublicConfig::new_for_tests(committee_size).with_port_offset(100);
 
         let mut handles = Vec::new();
         let tempdir = TempDir::new("validator_sync").unwrap();
@@ -258,7 +250,7 @@ mod smoke_tests {
         // Boot all validators but one.
         for i in 1..committee_size {
             let authority = i as AuthorityIndex;
-            let private = PrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+            let private = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
 
             let validator = Validator::start(authority, committee.clone(), &parameters, private)
                 .await
@@ -272,7 +264,7 @@ mod smoke_tests {
             .skip(1)
             .map(|address| address.to_owned())
             .collect();
-        let timeout = Parameters::DEFAULT_LEADER_TIMEOUT * 5;
+        let timeout = config::defaults::default_leader_timeout() * 5;
         tokio::select! {
             _ = await_for_commits(addresses) => (),
             _ = time::sleep(timeout) => panic!("Failed to gather commits within a few timeouts"),
@@ -280,7 +272,7 @@ mod smoke_tests {
 
         // Boot the last validator.
         let authority = 0 as AuthorityIndex;
-        let private = PrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+        let private = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
         let validator = Validator::start(authority, committee.clone(), &parameters, private)
             .await
             .unwrap();
@@ -292,7 +284,7 @@ mod smoke_tests {
             .next()
             .map(|address| address.to_owned())
             .unwrap();
-        let timeout = Parameters::DEFAULT_LEADER_TIMEOUT * 5;
+        let timeout = config::defaults::default_leader_timeout() * 5;
         tokio::select! {
             _ = await_for_commits(vec![address]) => (),
             _ = time::sleep(timeout) => panic!("Failed to gather commits within a few timeouts"),
@@ -303,16 +295,14 @@ mod smoke_tests {
     #[tokio::test]
     async fn validator_crash_faults() {
         let committee_size = 4;
-        let ips = vec![IpAddr::V4(Ipv4Addr::LOCALHOST); committee_size];
-
         let committee = Committee::new_for_benchmarks(committee_size);
-        let parameters = Parameters::new_for_benchmarks(ips).with_port_offset(200);
+        let parameters = NodePublicConfig::new_for_tests(committee_size).with_port_offset(200);
 
         let mut handles = Vec::new();
         let tempdir = TempDir::new("validator_crash_faults").unwrap();
         for i in 1..committee_size {
             let authority = i as AuthorityIndex;
-            let private = PrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+            let private = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
 
             let validator = Validator::start(authority, committee.clone(), &parameters, private)
                 .await
@@ -325,7 +315,7 @@ mod smoke_tests {
             .skip(1)
             .map(|address| address.to_owned())
             .collect();
-        let timeout = Parameters::DEFAULT_LEADER_TIMEOUT * 15;
+        let timeout = config::defaults::default_leader_timeout() * 15;
 
         tokio::select! {
             _ = await_for_commits(addresses) => (),
