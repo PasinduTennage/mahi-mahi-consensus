@@ -146,7 +146,7 @@ fn benchmark_genesis(
         None => NodeParameters::default(),
     };
 
-    let node_public_config = NodePublicConfig::new_for_benchmarks(ips, node_parameters);
+    let node_public_config = NodePublicConfig::new_for_benchmarks(ips, Some(node_parameters));
     let mut node_public_config_path = working_directory.clone();
     node_public_config_path.push(NodePublicConfig::DEFAULT_FILENAME);
     node_public_config
@@ -163,7 +163,7 @@ fn benchmark_genesis(
     for (i, private_config) in node_private_configs.into_iter().enumerate() {
         fs::create_dir_all(&private_config.storage_path)
             .expect("Failed to create storage directory");
-        let path = NodePrivateConfig::default_filename(i as AuthorityIndex);
+        let path = working_directory.join(NodePrivateConfig::default_filename(i as AuthorityIndex));
         private_config
             .print(&path)
             .wrap_err("Failed to print private config file")?;

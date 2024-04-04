@@ -109,7 +109,7 @@ pub struct NodePublicConfig {
 }
 
 impl NodePublicConfig {
-    pub const DEFAULT_FILENAME: &'static str = "parameters.yaml";
+    pub const DEFAULT_FILENAME: &'static str = "public-config.yaml";
     pub const PORT_OFFSET_FOR_TESTS: u16 = 1500;
 
     pub fn new_for_tests(committee_size: usize) -> Self {
@@ -135,11 +135,11 @@ impl NodePublicConfig {
         }
     }
 
-    pub fn new_for_benchmarks(ips: Vec<IpAddr>, node_parameters: NodeParameters) -> Self {
+    pub fn new_for_benchmarks(ips: Vec<IpAddr>, node_parameters: Option<NodeParameters>) -> Self {
         let default_with_ips = Self::new_for_tests(ips.len()).with_ips(ips);
         Self {
             identifiers: default_with_ips.identifiers,
-            parameters: node_parameters,
+            parameters: node_parameters.unwrap_or_default(),
         }
     }
 

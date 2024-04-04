@@ -687,6 +687,8 @@ impl<P: ProtocolCommands<N, C> + ProtocolMetrics, N, C> Orchestrator<P, N, C> {
                 latest_committee_size = parameters.nodes;
             }
 
+            return Ok(());
+
             // Deploy the validators.
             let monitor = self.run_nodes(&parameters).await?;
 

@@ -124,7 +124,7 @@ pub enum Operation {
         retries: usize,
 
         /// The load to submit to the system.
-        #[clap(long, value_name = "[INT]", default_value = "[200]", global = true)]
+        #[clap(long, value_name = "[INT]", default_value = "200", global = true)]
         loads: Vec<usize>,
     },
 

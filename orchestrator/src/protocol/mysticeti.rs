@@ -292,17 +292,17 @@ impl ProtocolMetrics for MysticetiProtocol {
     where
         I: IntoIterator<Item = Instance>,
     {
-        // let (ips, instances): (_, Vec<_>) = instances
-        //     .into_iter()
-        //     .map(|x| (IpAddr::V4(x.main_ip), x))
-        //     .unzip();
-        // let parameters = config::ValidatorPublicParameters::new_for_tests(ips);
-        // let metrics_paths = parameters
-        //     .all_metric_addresses()
-        //     .map(|x| format!("{x}{}", mysticeti_core::prometheus::METRICS_ROUTE));
+        let (ips, instances): (_, Vec<_>) = instances
+            .into_iter()
+            .map(|x| (IpAddr::V4(x.main_ip), x))
+            .unzip();
 
-        // instances.into_iter().zip(metrics_paths).collect()
-        todo!()
+        let parameters = config::NodePublicConfig::new_for_benchmarks(ips, None);
+        let metrics_paths = parameters
+            .all_metric_addresses()
+            .map(|x| format!("{x}{}", mysticeti_core::prometheus::METRICS_ROUTE));
+
+        instances.into_iter().zip(metrics_paths).collect()
     }
 
     fn clients_metrics_path<I>(&self, instances: I) -> Vec<(Instance, String)>
