@@ -12,8 +12,8 @@ use std::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{
-    crypto::dummy_public_key,
-    types::{AuthorityIndex, KeyPair, PublicKey, RoundNumber},
+    crypto::{dummy_public_key, Signer},
+    types::{AuthorityIndex, PublicKey, RoundNumber},
 };
 
 pub trait ImportExport: Serialize + DeserializeOwned {
@@ -92,6 +92,8 @@ impl Default for NodeParameters {
         }
     }
 }
+
+impl ImportExport for NodeParameters {}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NodeIdentifier {
@@ -186,26 +188,34 @@ impl ImportExport for NodePublicConfig {}
 
 #[derive(Serialize, Deserialize)]
 pub struct NodePrivateConfig {
-    authority_index: AuthorityIndex,
-    keypair: KeyPair,
+    authority: AuthorityIndex,
+    keypair: Signer,
     pub storage_path: PathBuf,
 }
 
 impl NodePrivateConfig {
-    pub fn new_for_benchmarks(storage_path: &Path, authority_index: AuthorityIndex) -> Self {
-        // TODO: Once we have a crypto library, generate a keypair from a fixed seed.
-        tracing::warn!("Generating a predictable keypair for benchmarking");
-        let path = storage_path.join(format!("val-{authority_index}"));
-        fs::create_dir_all(&path).expect("Failed to create validator storage directory");
-        Self {
-            authority_index,
-            keypair: 0,
-            storage_path: path,
-        }
+    pub fn new_for_benchmarks(working_dir: PathBuf, committee_size: usize) -> Vec<Self> {
+        Signer::new_for_test(committee_size)
+            .into_iter()
+            .enumerate()
+            .map(|(i, keypair)| {
+                let authority = i as AuthorityIndex;
+                let path = working_dir.join(NodePrivateConfig::default_storage_path(authority));
+                Self {
+                    authority,
+                    keypair,
+                    storage_path: path,
+                }
+            })
+            .collect()
     }
 
     pub fn default_filename(authority: AuthorityIndex) -> PathBuf {
-        ["private", &format!("{authority}.yaml")].iter().collect()
+        format!("val-{authority}.yaml").into()
+    }
+
+    pub fn default_storage_path(authority: AuthorityIndex) -> PathBuf {
+        format!("storage-{authority}").into()
     }
 
     pub fn certified_transactions_log(&self) -> PathBuf {

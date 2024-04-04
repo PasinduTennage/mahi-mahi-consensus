@@ -141,7 +141,7 @@ impl ProtocolCommands<MysticetiNodeParameters, MysticetiClientParameters> for My
     }
 
     fn db_directories(&self) -> Vec<PathBuf> {
-        vec![self.working_dir.join("private/val-*/*")]
+        vec![self.working_dir.join("storage-*")]
     }
 
     // TODO: Check if this is necessary
@@ -153,34 +153,31 @@ impl ProtocolCommands<MysticetiNodeParameters, MysticetiClientParameters> for My
     where
         I: Iterator<Item = &'a Instance>,
     {
-        // 1. Upload node config to all instances. Get them from file and add ip addresses.
-        // 3. Run the genesis command on all instances to generate the private configuration file and committee file.
+        let ips = instances
+            .map(|x| x.main_ip.to_string())
+            .collect::<Vec<_>>()
+            .join(" ");
 
-        let ips = instances.map(|x| x.main_ip.into()).collect::<Vec<_>>();
         let node_parameters = parameters.node_parameters.0.clone();
-        let node_public_config = NodePublicConfig::new_for_benchmarks(ips, node_parameters);
-        todo!();
-        // let ips = instances
-        //     .map(|x| x.main_ip.to_string())
-        //     .collect::<Vec<_>>()
-        //     .join(" ");
-        // let working_directory = self.working_dir.display();
+        let node_parameters_string = serde_yaml::to_string(&node_parameters).unwrap();
+        let node_parameters_path = self.working_dir.join("node-parameters.yaml");
+        let upload_node_parameters = format!(
+            "echo -e '{node_parameters_string}' > {}",
+            node_parameters_path.display()
+        );
 
-        // let enable_pipeline = if parameters.node_parameters.enable_pipelining {
-        //     "--enable-pipeline"
-        // } else {
-        //     ""
-        // };
-        // let number_of_leaders = parameters.node_parameters.number_of_leaders;
+        let genesis = [
+            &format!("{RUST_FLAGS} cargo run {CARGO_FLAGS} --bin mysticeti --"),
+            "benchmark-genesis",
+            &format!(
+                "--ips {ips} --working-directory {} --node-parameters-path {}",
+                self.working_dir.display(),
+                node_parameters_path.display()
+            ),
+        ]
+        .join(" ");
 
-        // let genesis = [
-        //     &format!("{RUST_FLAGS} cargo run {CARGO_FLAGS} --bin mysticeti --"),
-        //     "benchmark-genesis",
-        //     &format!("--ips {ips} --working-directory {working_directory} {enable_pipeline} --number-of-leaders {number_of_leaders}"),
-        // ]
-        // .join(" ");
-
-        // ["source $HOME/.cargo/env", &genesis].join(" && ")
+        ["source $HOME/.cargo/env", &upload_node_parameters, &genesis].join(" && ")
     }
 
     // TODO: remove this

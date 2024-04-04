@@ -1,19 +1,29 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::serde::{ByteRepr, BytesVisitor};
-#[cfg(not(test))]
-use crate::types::Vote;
-use crate::types::{
-    AuthorityIndex, BaseStatement, BlockReference, EpochStatus, RoundNumber, StatementBlock,
-    TimestampNs,
-};
+use std::fmt;
+
 use digest::Digest;
 #[cfg(not(test))]
 use ed25519_consensus::Signature;
+use rand::{rngs::StdRng, SeedableRng};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt;
 use zeroize::Zeroize;
+
+#[cfg(not(test))]
+use crate::types::Vote;
+use crate::{
+    serde::{ByteRepr, BytesVisitor},
+    types::{
+        AuthorityIndex,
+        BaseStatement,
+        BlockReference,
+        EpochStatus,
+        RoundNumber,
+        StatementBlock,
+        TimestampNs,
+    },
+};
 
 pub const SIGNATURE_SIZE: usize = 64;
 pub const BLOCK_DIGEST_SIZE: usize = 32;
@@ -28,6 +38,7 @@ pub struct PublicKey(ed25519_consensus::VerificationKey);
 pub struct SignatureBytes([u8; SIGNATURE_SIZE]);
 
 // Box ensures value is not copied in memory when Signer itself is moved around for better security
+#[derive(Serialize, Deserialize)]
 pub struct Signer(Box<ed25519_consensus::SigningKey>);
 
 #[cfg(not(test))]
@@ -189,6 +200,13 @@ impl PublicKey {
 }
 
 impl Signer {
+    pub fn new_for_test(n: usize) -> Vec<Self> {
+        let mut rng = StdRng::seed_from_u64(0);
+        (0..n)
+            .map(|_| Self(Box::new(ed25519_consensus::SigningKey::new(&mut rng))))
+            .collect()
+    }
+
     #[cfg(not(test))]
     pub fn sign_block(
         &self,

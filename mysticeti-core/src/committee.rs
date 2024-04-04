@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::ImportExport,
-    crypto::{dummy_public_key, PublicKey},
+    crypto::{dummy_public_key, PublicKey, Signer},
     data::Data,
     range_map::RangeMap,
     types::{
@@ -149,8 +149,15 @@ impl Committee {
     }
 
     pub fn new_for_benchmarks(committee_size: usize) -> Arc<Self> {
-        let stake = vec![1; committee_size];
-        Self::new_test(stake)
+        Self::new(
+            Signer::new_for_test(committee_size)
+                .into_iter()
+                .map(|keypair| Authority {
+                    stake: 1,
+                    public_key: keypair.public_key(),
+                })
+                .collect(),
+        )
     }
 }
 
