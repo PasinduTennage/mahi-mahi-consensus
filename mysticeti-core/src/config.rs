@@ -194,7 +194,7 @@ pub struct NodePrivateConfig {
 }
 
 impl NodePrivateConfig {
-    pub fn new_for_benchmarks(working_dir: PathBuf, committee_size: usize) -> Vec<Self> {
+    pub fn new_for_benchmarks(working_dir: &Path, committee_size: usize) -> Vec<Self> {
         Signer::new_for_test(committee_size)
             .into_iter()
             .enumerate()

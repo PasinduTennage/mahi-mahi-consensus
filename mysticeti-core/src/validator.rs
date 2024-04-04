@@ -146,7 +146,7 @@ impl Validator {
 
 #[cfg(test)]
 mod smoke_tests {
-    use std::{collections::VecDeque, net::SocketAddr, time::Duration};
+    use std::{collections::VecDeque, fs, net::SocketAddr, time::Duration};
 
     use tempdir::TempDir;
     use tokio::time;
@@ -189,10 +189,14 @@ mod smoke_tests {
         let client_parameters = ClientParameters::default();
 
         let mut handles = Vec::new();
-        let tempdir = TempDir::new("validator_commit").unwrap();
-        for i in 0..committee_size {
+        let dir = TempDir::new("validator_commit").unwrap();
+        let private_configs = NodePrivateConfig::new_for_benchmarks(dir.as_ref(), committee_size);
+        private_configs.iter().for_each(|private_config| {
+            fs::create_dir_all(&private_config.storage_path).unwrap();
+        });
+
+        for (i, private_config) in private_configs.into_iter().enumerate() {
             let authority = i as AuthorityIndex;
-            let private_config = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
 
             let validator = Validator::start(
                 authority,
@@ -227,13 +231,18 @@ mod smoke_tests {
         let client_parameters = ClientParameters::default();
 
         let mut handles = Vec::new();
-        let tempdir = TempDir::new("validator_sync").unwrap();
+        let dir = TempDir::new("validator_sync").unwrap();
+        let private_configs = NodePrivateConfig::new_for_benchmarks(dir.as_ref(), committee_size);
+        private_configs.iter().for_each(|private_config| {
+            fs::create_dir_all(&private_config.storage_path).unwrap();
+        });
 
         // Boot all validators but one.
-        for i in 1..committee_size {
+        for (i, private_config) in private_configs.into_iter().enumerate() {
+            if i == 0 {
+                continue;
+            }
             let authority = i as AuthorityIndex;
-            let private_config = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
-
             let validator = Validator::start(
                 authority,
                 committee.clone(),
@@ -259,10 +268,11 @@ mod smoke_tests {
         }
 
         // Boot the last validator.
-        let authority = 0 as AuthorityIndex;
-        let private_config = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+        let authority = 0;
+        let private_config =
+            NodePrivateConfig::new_for_benchmarks(dir.as_ref(), committee_size).remove(authority);
         let validator = Validator::start(
-            authority,
+            authority as AuthorityIndex,
             committee.clone(),
             &public_config,
             private_config,
@@ -294,11 +304,18 @@ mod smoke_tests {
         let client_parameters = ClientParameters::default();
 
         let mut handles = Vec::new();
-        let tempdir = TempDir::new("validator_crash_faults").unwrap();
-        for i in 1..committee_size {
-            let authority = i as AuthorityIndex;
-            let private_config = NodePrivateConfig::new_for_benchmarks(tempdir.as_ref(), authority);
+        let dir = TempDir::new("validator_crash_faults").unwrap();
+        let private_configs = NodePrivateConfig::new_for_benchmarks(dir.as_ref(), committee_size);
+        private_configs.iter().for_each(|private_config| {
+            fs::create_dir_all(&private_config.storage_path).unwrap();
+        });
 
+        for (i, private_config) in private_configs.into_iter().enumerate() {
+            if i == 0 {
+                continue;
+            }
+
+            let authority = i as AuthorityIndex;
             let validator = Validator::start(
                 authority,
                 committee.clone(),

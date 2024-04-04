@@ -159,8 +159,10 @@ fn benchmark_genesis(
 
     // Generate the private node config files.
     let node_private_configs =
-        NodePrivateConfig::new_for_benchmarks(working_directory, committee_size);
+        NodePrivateConfig::new_for_benchmarks(&working_directory, committee_size);
     for (i, private_config) in node_private_configs.into_iter().enumerate() {
+        fs::create_dir_all(&private_config.storage_path)
+            .expect("Failed to create storage directory");
         let path = NodePrivateConfig::default_filename(i as AuthorityIndex);
         private_config
             .print(&path)
