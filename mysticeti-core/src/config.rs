@@ -211,7 +211,7 @@ impl NodePrivateConfig {
     }
 
     pub fn default_filename(authority: AuthorityIndex) -> PathBuf {
-        format!("val-{authority}.yaml").into()
+        format!("private-config-{authority}.yaml").into()
     }
 
     pub fn default_storage_path(authority: AuthorityIndex) -> PathBuf {
