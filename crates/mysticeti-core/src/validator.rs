@@ -80,6 +80,7 @@ impl Validator {
             &private_config.certified_transactions_log(),
             recovered.block_store.clone(),
             metrics.clone(),
+            public_config.parameters.consensus_only,
         );
 
         TransactionGenerator::start(
@@ -122,6 +123,7 @@ impl Validator {
             commit_handler,
             public_config.parameters.shutdown_grace_period,
             metrics,
+            &public_config,
         );
 
         tracing::info!("Validator {authority} listening on {network_address}");
