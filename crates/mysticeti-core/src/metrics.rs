@@ -35,7 +35,7 @@ use crate::{
 };
 
 const LATENCY_SEC_BUCKETS: &[f64] = &[
-    0.1, 0.25, 0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.5, 5., 10., 20., 30., 60., 90.,
+    0.1, 0.25, 0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.5, 3.0, 4.0, 5., 10., 20., 30., 60., 90.,
 ];
 
 /// Metrics collected by the benchmark.
@@ -225,6 +225,12 @@ impl Metrics {
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             ).unwrap(),
+            submitted_transactions: register_int_counter_with_registry!(
+                "submitted_transactions",
+                "Total number of submitted transactions",
+                registry,
+            )
+            .unwrap(),
             leader_timeout_total: register_int_counter_with_registry!(
                 "leader_timeout_total",
                 "Total number of leader timeouts",
@@ -332,12 +338,6 @@ impl Metrics {
                 registry,
             )
             .unwrap(),
-
-            submitted_transactions: register_int_counter_with_registry!(
-                "submitted_transactions",
-                "Number of submitted transactions",
-                registry,
-            ).unwrap(),
 
             transaction_certified_latency,
             certificate_committed_latency,

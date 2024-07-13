@@ -102,7 +102,7 @@ impl Prometheus {
     /// Generate the commands to update the prometheus configuration and restart prometheus.
     pub fn setup_commands<I, P>(
         nodes: I,
-        clients: I,
+        _clients: I,
         protocol: &P,
         parameters: &BenchmarkParameters,
     ) -> String
@@ -120,12 +120,13 @@ impl Prometheus {
             config.push(scrape_config);
         }
 
-        let clients_metrics_path = protocol.clients_metrics_path(clients, parameters);
-        for (i, (_, client_metrics_path)) in clients_metrics_path.into_iter().enumerate() {
-            let id = format!("client-{i}");
-            let scrape_config = Self::scrape_configuration(&id, &client_metrics_path);
-            config.push(scrape_config);
-        }
+        // NOTE: Hack to avoid clients metrics.
+        // let clients_metrics_path = protocol.clients_metrics_path(clients, parameters);
+        // for (i, (_, client_metrics_path)) in clients_metrics_path.into_iter().enumerate() {
+        //     let id = format!("client-{i}");
+        //     let scrape_config = Self::scrape_configuration(&id, &client_metrics_path);
+        //     config.push(scrape_config);
+        // }
 
         // Make the command to configure and restart prometheus.
         format!(
