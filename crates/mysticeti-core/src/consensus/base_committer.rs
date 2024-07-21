@@ -121,13 +121,13 @@ impl BaseCommitter {
                 .get_block(*include)
                 .expect("We should have the whole sub-dag by now");
             if let Some(support) = self.find_support((author, round), &include) {
-                return Some(support);
+                return Some(support); // recursively look backwards whether any parent block of `from` supports (author, round)
             }
         }
         None
     }
 
-    /// Check whether the specified block (`potential_certificate`) is a vote for
+    /// Check whether the specified block (`potential_vote`) is a vote for
     /// the specified leader (`leader_block`).
     fn is_vote(
         &self,
@@ -181,6 +181,7 @@ impl BaseCommitter {
         let wave = self.wave_number(leader_round);
         let decision_round = self.decision_round(wave);
         let decision_blocks = self.block_store.get_blocks_by_round(decision_round);
+        // potential_certificates are the set of blocks that are in the decision round of the target leader and has a link to the anchor
         let potential_certificates: Vec<_> = decision_blocks
             .iter()
             .filter(|block| self.block_store.linked(anchor, block))
@@ -299,6 +300,7 @@ impl BaseCommitter {
     ) -> LeaderStatus {
         // Check whether the leader has enough blame. That is, whether there are 2f+1 non-votes
         // for that leader (which ensure there will never be a certificate for that leader).
+        // what if we have wavelength >2 ? then we should check all the voting rounds?
         let voting_round = leader_round + 1;
         if self.enough_leader_blame(voting_round, leader) {
             return LeaderStatus::Skip(leader, leader_round);
