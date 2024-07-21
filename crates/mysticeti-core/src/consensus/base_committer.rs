@@ -92,7 +92,7 @@ impl BaseCommitter {
         }
 
         let offset = self.options.leader_offset as RoundNumber;
-        Some(self.committee.elect_leader(round + offset))
+        Some(self.committee.elect_leader(round + offset)) // r % num nodes
     }
 
     /// Find which block is supported at (author, round) by the given block.
@@ -105,7 +105,7 @@ impl BaseCommitter {
         (author, round): (AuthorityIndex, RoundNumber),
         from: &Data<StatementBlock>,
     ) -> Option<BlockReference> {
-        if from.round() < round {
+        if from.round() <= round { // minor fix
             return None;
         }
         for include in from.includes() {

@@ -57,7 +57,7 @@ pub mod node_defaults {
     }
 
     pub fn default_leader_timeout() -> std::time::Duration {
-        std::time::Duration::from_secs(2)
+        std::time::Duration::from_secs(0)
     }
 
     pub fn default_max_block_size() -> usize {
@@ -73,11 +73,11 @@ pub mod node_defaults {
     }
 
     pub fn default_number_of_leaders() -> usize {
-        2
+        1
     }
 
     pub fn default_enable_pipelining() -> bool {
-        true
+        false
     }
 
     pub fn default_consensus_only() -> bool {
