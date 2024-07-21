@@ -16,7 +16,9 @@ use mysticeti_core::{
     types::AuthorityIndex,
     validator::Validator,
 };
-use tracing_subscriber::{filter::LevelFilter, fmt, EnvFilter};
+use tracing::{warn, info};
+use tracing_subscriber::{fmt, EnvFilter, FmtSubscriber, layer::SubscriberExt};
+use tracing_subscriber::filter::LevelFilter;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -76,7 +78,18 @@ async fn main() -> Result<()> {
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
-    fmt().with_env_filter(filter).init();
+
+    // Configure a subscriber to remove ANSI codes and customize the format
+    let subscriber = FmtSubscriber::builder()
+        .with_env_filter(filter)
+        .with_ansi(false) // Disable ANSI codes for clean log output
+        .without_time()  // Remove the timestamp
+        .with_target(false) // Remove the target (e.g., mysticeti)
+        .with_level(false)  // Remove the log level (e.g., WARN)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
 
     // Parse the command line arguments.
     match Args::parse().operation {
