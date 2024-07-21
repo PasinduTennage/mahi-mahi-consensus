@@ -7,6 +7,8 @@ use std::{
     sync::{atomic::AtomicU64, Arc},
 };
 
+use rand::Rng;
+
 use minibytes::Bytes;
 
 use crate::{
@@ -70,6 +72,9 @@ pub enum MetaStatement {
 }
 
 impl<H: BlockHandler> Core<H> {
+
+    pub const ATTACK_SEVERITY: u64 = 100;
+    pub const ATTACK_DELAY: u64 = 1;
     #[allow(clippy::too_many_arguments)]
     pub fn open(
         mut block_handler: H,
@@ -320,7 +325,20 @@ impl<H: BlockHandler> Core<H> {
         }
 
         tracing::debug!("Created block {block:?}");
+        if self.is_attacked(){
+            // sleep for 1 second
+            std::thread::sleep(std::time::Duration::from_millis(Self::ATTACK_DELAY));
+        }
         Some(block)
+    }
+    pub fn is_attacked(&self) -> bool {
+        let random_number = rand::thread_rng().gen_range(0..Self::ATTACK_SEVERITY);
+        if random_number < 10 {
+            println!("Node under attacked");
+            true
+        }else{
+            false
+        }
     }
 
     pub fn wal_syncer(&self) -> WalSyncer {
