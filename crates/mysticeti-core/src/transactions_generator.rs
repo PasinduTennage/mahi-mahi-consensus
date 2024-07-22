@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{cmp::min, time::Duration};
+use std::{cmp::min, sync::Arc, time::Duration};
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use tokio::sync::mpsc;
@@ -9,6 +9,7 @@ use tokio::sync::mpsc;
 use crate::{
     config::{ClientParameters, NodePublicConfig},
     crypto::AsBytes,
+    metrics::Metrics,
     runtime::{self, timestamp_utc},
     types::{AuthorityIndex, Transaction},
 };
@@ -18,6 +19,7 @@ pub struct TransactionGenerator {
     rng: StdRng,
     client_parameters: ClientParameters,
     node_public_config: NodePublicConfig,
+    metrics: Arc<Metrics>,
 }
 
 impl TransactionGenerator {
@@ -28,6 +30,7 @@ impl TransactionGenerator {
         seed: AuthorityIndex,
         client_parameters: ClientParameters,
         node_public_config: NodePublicConfig,
+        metrics: Arc<Metrics>,
     ) {
         assert!(client_parameters.transaction_size > 8 + 8); // 8 bytes timestamp + 8 bytes random
         tracing::info!(
@@ -41,6 +44,7 @@ impl TransactionGenerator {
                 rng: StdRng::seed_from_u64(seed),
                 client_parameters,
                 node_public_config,
+                metrics,
             }
             .run(),
         );
@@ -49,10 +53,15 @@ impl TransactionGenerator {
     pub async fn run(mut self) {
         let load = self.client_parameters.load;
         let transactions_per_block_interval = (load + 9) / 10;
+        tracing::info!(
+            "Generating {transactions_per_block_interval} transactions per {} ms",
+            Self::TARGET_BLOCK_INTERVAL.as_millis()
+        );
         let max_block_size = self.node_public_config.parameters.max_block_size;
         let target_block_size = min(max_block_size, transactions_per_block_interval);
 
         let mut counter = 0;
+        let mut tx_to_report = 0;
         let mut random: u64 = self.rng.gen(); // 8 bytes
         let zeros = vec![0u8; self.client_parameters.transaction_size - 8 - 8]; // 8 bytes timestamp + 8 bytes random
 
@@ -75,6 +84,7 @@ impl TransactionGenerator {
                 block.push(Transaction::new(transaction));
                 block_size += self.client_parameters.transaction_size;
                 counter += 1;
+                tx_to_report += 1;
 
                 if block_size >= max_block_size {
                     if self.sender.send(block.clone()).await.is_err() {
@@ -87,6 +97,11 @@ impl TransactionGenerator {
 
             if !block.is_empty() && self.sender.send(block).await.is_err() {
                 return;
+            }
+
+            if counter % 10_000 == 0 {
+                self.metrics.submitted_transactions.inc_by(tx_to_report);
+                tx_to_report = 0
             }
         }
     }
