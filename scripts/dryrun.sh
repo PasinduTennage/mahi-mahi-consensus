@@ -3,7 +3,7 @@
 
 # bash run.sh
 
-export RUST_LOG=warn,mysticeti_core::consensus=trace,mysticeti_core::net_sync=DEBUG,mysticeti_core::core=DEBUG
+export RUST_LOG=warn,mysticeti_core::consensus=trace,mysticeti_core::net_sync=warn,mysticeti_core::core=warn
 
 tmux kill-server || true
 
@@ -12,5 +12,5 @@ tmux new -d -s "v1" "cargo run --bin mysticeti -- dry-run --committee-size 4 --a
 tmux new -d -s "v2" "cargo run --bin mysticeti -- dry-run --committee-size 4 --authority 2 > v2.log.ansi"
 tmux new -d -s "v3" "cargo run --bin mysticeti -- dry-run --committee-size 4 --authority 3 > v3.log.ansi"
 
-sleep 60
+sleep 2
 tmux kill-server
