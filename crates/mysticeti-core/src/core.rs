@@ -334,7 +334,7 @@ impl<H: BlockHandler> Core<H> {
     pub fn is_attacked(&self) -> bool {
         let random_number = rand::thread_rng().gen_range(0..Self::ATTACK_SEVERITY);
         if random_number < 10 {
-            println!("Node under attacked");
+            // println!("Node under attacked");
             true
         }else{
             false
@@ -431,6 +431,7 @@ impl<H: BlockHandler> Core<H> {
             for block in &commit.blocks {
                 self.epoch_manager
                     .observe_committed_block(block, &self.committee);
+                println!("Committed block: {:?}", block.author_round());
             }
             commit_data.push(CommitData::from(commit));
         }
