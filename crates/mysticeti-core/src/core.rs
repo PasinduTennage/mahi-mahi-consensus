@@ -73,7 +73,7 @@ pub enum MetaStatement {
 
 impl<H: BlockHandler> Core<H> {
 
-    pub const ATTACK_SEVERITY: u64 = 100;
+    pub const ATTACK_SEVERITY: u64 = 9;
     pub const ATTACK_DELAY: u64 = 1;
     #[allow(clippy::too_many_arguments)]
     pub fn open(
