@@ -6,7 +6,7 @@ use std::{fmt::Display, sync::Arc};
 use super::{LeaderStatus, DEFAULT_WAVE_LENGTH};
 use crate::{
     block_store::BlockStore,
-    committee::{Committee, QuorumThreshold, StakeAggregator},
+    committee::{Committee, QuorumThreshold, StakeAggregator, SkipThreshold},
     consensus::MINIMUM_WAVE_LENGTH,
     data::Data,
     types::{format_authority_round, AuthorityIndex, BlockReference, RoundNumber, StatementBlock},
@@ -79,7 +79,7 @@ impl BaseCommitter {
     /// round of the wave.
     fn decision_round(&self, wave: WaveNumber) -> RoundNumber {
         let wave_length = self.options.wave_length;
-        wave * wave_length + wave_length - 1 + self.options.round_offset
+        wave * wave_length + wave_length - 2 + self.options.round_offset
     }
 
     /// The leader-elect protocol is offset by `leader_offset` to ensure that different committers
@@ -211,29 +211,24 @@ impl BaseCommitter {
         }
     }
 
-    /// Check whether the specified leader has enough blames (that is, 2f+1 non-votes) to be
-    /// directly skipped.
-    fn enough_leader_blame(&self, voting_round: RoundNumber, leader: AuthorityIndex) -> bool {
+    /// Check whether the specified leader has 0 votes from the voting round
+    fn can_skip_leader(&self, voting_round: RoundNumber, leader: AuthorityIndex, leader_round: RoundNumber) -> bool {
+        let leader_blocks = self.block_store.get_blocks_at_authority_round(leader, leader_round);
         let voting_blocks = self.block_store.get_blocks_by_round(voting_round);
-
-        let mut blame_stake_aggregator = StakeAggregator::<QuorumThreshold>::new();
+        let mut skip_stake_aggregator = StakeAggregator::<SkipThreshold>::new();
         for voting_block in &voting_blocks {
-            let voter = voting_block.reference().authority;
-            if voting_block
-                .includes()
-                .iter()
-                .all(|include| include.authority != leader)
-            {
-                tracing::trace!(
-                    "[{self}] {voting_block:?} is a blame for leader {}",
-                    format_authority_round(leader, voting_round - 1)
-                );
-                if blame_stake_aggregator.add(voter, &self.committee) {
-                    return true;
+            for leader_block in &leader_blocks {
+                if self.is_vote(voting_block, leader_block) {
+                    tracing::trace!(
+                        "[{self}] {voting_block:?} is a vote for leader {leader_block:?}"
+                    );
+                    if skip_stake_aggregator.add(voting_block.reference().authority, &self.committee) {
+                        return false;
+                    }
                 }
             }
         }
-        false
+        true
     }
 
     /// Check whether the specified leader has enough support (that is, 2f+1 certificates)
@@ -262,12 +257,15 @@ impl BaseCommitter {
 
     /// Apply the indirect decision rule to the specified leader to see whether we can indirect-commit
     /// or indirect-skip it.
-    #[tracing::instrument(skip_all, fields(leader = %format_authority_round(leader, leader_round)))]
+    #[tracing::instrument(
+        skip_all,
+        fields(leader = % format_authority_round(leader, leader_round))
+    )]
     pub fn try_indirect_decide<'a>(
         &self,
         leader: AuthorityIndex,
         leader_round: RoundNumber,
-        leaders: impl Iterator<Item = &'a LeaderStatus>,
+        leaders: impl Iterator<Item=&'a LeaderStatus>,
     ) -> LeaderStatus {
         // The anchor is the first committed leader with round higher than the decision round of the
         // target leader. We must stop the iteration upon encountering an undecided leader.
@@ -292,7 +290,10 @@ impl BaseCommitter {
 
     /// Apply the direct decision rule to the specified leader to see whether we can direct-commit or
     /// direct-skip it.
-    #[tracing::instrument(skip_all, fields(leader = %format_authority_round(leader, leader_round)))]
+    #[tracing::instrument(
+        skip_all,
+        fields(leader = % format_authority_round(leader, leader_round))
+    )]
     pub fn try_direct_decide(
         &self,
         leader: AuthorityIndex,
@@ -301,8 +302,8 @@ impl BaseCommitter {
         // Check whether the leader has enough blame. That is, whether there are 2f+1 non-votes
         // for that leader (which ensure there will never be a certificate for that leader).
         // what if we have wavelength >2 ? then we should check all the voting rounds?
-        let voting_round = leader_round + 1;
-        if self.enough_leader_blame(voting_round, leader) {
+        let voting_round = leader_round + 2;
+        if self.can_skip_leader(voting_round, leader, leader_round) {
             return LeaderStatus::Skip(leader, leader_round);
         }
 

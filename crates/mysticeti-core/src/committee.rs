@@ -38,6 +38,7 @@ pub struct Committee {
     authorities: Vec<Authority>,
     validity_threshold: Stake, // The minimum stake required for validity
     quorum_threshold: Stake,   // The minimum stake required for quorum
+    skip_threshold: Stake, // The minimum stake required to skip a transaction
 }
 
 impl Committee {
@@ -65,10 +66,12 @@ impl Committee {
         }
         let validity_threshold = total_stake / 3;
         let quorum_threshold = 2 * total_stake / 3;
+        let skip_threshold = 0; // todo how to set this value using total stake
         Arc::new(Committee {
             authorities,
             validity_threshold,
             quorum_threshold,
+            skip_threshold,
         })
     }
 
@@ -84,6 +87,10 @@ impl Committee {
 
     pub fn quorum_threshold(&self) -> Stake {
         self.quorum_threshold + 1
+    }
+
+    pub fn skip_threshold(&self) -> Stake {
+        self.skip_threshold + 1
     }
 
     pub fn get_public_key(&self, authority: AuthorityIndex) -> Option<&PublicKey> {
@@ -126,6 +133,12 @@ impl Committee {
     pub fn is_quorum(&self, amount: Stake) -> bool {
         amount > self.quorum_threshold
     }
+
+    pub fn is_non_zero(&self, amount: Stake) -> bool {
+        amount > self.skip_threshold
+    }
+
+
 
     pub fn get_total_stake<A: Borrow<AuthorityIndex>>(&self, authorities: &HashSet<A>) -> Stake {
         let mut total_stake = 0;
@@ -195,6 +208,9 @@ pub struct QuorumThreshold;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ValidityThreshold;
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct SkipThreshold;
+
 impl CommitteeThreshold for QuorumThreshold {
     fn is_threshold(committee: &Committee, amount: Stake) -> bool {
         committee.is_quorum(amount)
@@ -204,6 +220,12 @@ impl CommitteeThreshold for QuorumThreshold {
 impl CommitteeThreshold for ValidityThreshold {
     fn is_threshold(committee: &Committee, amount: Stake) -> bool {
         committee.is_valid(amount)
+    }
+}
+
+impl CommitteeThreshold for SkipThreshold {
+    fn is_threshold(committee: &Committee, amount: Stake) -> bool {
+        committee.is_non_zero(amount)
     }
 }
 
