@@ -87,43 +87,38 @@ impl<H: BlockHandler, S: SyncerSignals, C: CommitObserver> Syncer<H, S, C> {
             .metrics
             .utilization_timer
             .utilization_timer("Syncer::try_new_block");
-        if self.force_new_block
-            || self
-                .core
-                .ready_new_block(self.commit_period, &self.connected_authorities)
-        {
-            if self.core.try_new_block().is_none() {
-                return;
-            }
-            self.signals.new_block_ready();
-            self.force_new_block = false;
-
-            if self.core.epoch_closed() {
-                return;
-            }; // No need to commit after epoch is safe to close
-
-            let newly_committed = self.core.try_commit();
-            let utc_now = timestamp_utc();
-            if !newly_committed.is_empty() {
-                let committed_refs: Vec<_> = newly_committed
-                    .iter()
-                    .map(|block| {
-                        let age = utc_now
-                            .checked_sub(block.meta_creation_time())
-                            .unwrap_or_default();
-                        format!("{}({}ms)", block.reference(), age.as_millis())
-                    })
-                    .collect();
-                tracing::debug!("Committed {:?}", committed_refs);
-            }
-            let committed_subdag = self
-                .commit_observer
-                .handle_commit(self.core.block_store(), newly_committed);
-            self.core.handle_committed_subdag(
-                committed_subdag,
-                &self.commit_observer.aggregator_state(),
-            );
+        
+        if self.core.try_new_block().is_none() {
+            return;
         }
+        self.signals.new_block_ready();
+        self.force_new_block = false;
+
+        if self.core.epoch_closed() {
+            return;
+        }; // No need to commit after epoch is safe to close
+
+        let newly_committed = self.core.try_commit();
+        let utc_now = timestamp_utc();
+        if !newly_committed.is_empty() {
+            let committed_refs: Vec<_> = newly_committed
+                .iter()
+                .map(|block| {
+                    let age = utc_now
+                        .checked_sub(block.meta_creation_time())
+                        .unwrap_or_default();
+                    format!("{}({}ms)", block.reference(), age.as_millis())
+                })
+                .collect();
+            tracing::debug!("Committed {:?}", committed_refs);
+        }
+        let committed_subdag = self
+            .commit_observer
+            .handle_commit(self.core.block_store(), newly_committed);
+        self.core.handle_committed_subdag(
+            committed_subdag,
+            &self.commit_observer.aggregator_state(),
+        );
     }
 
     pub fn commit_observer(&self) -> &C {

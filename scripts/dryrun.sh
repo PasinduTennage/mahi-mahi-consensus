@@ -3,6 +3,8 @@
 
 # bash run.sh
 
+cargo build
+
 export RUST_LOG=warn,mysticeti_core::consensus=debug,mysticeti_core::net_sync=warn,mysticeti_core::core=debug
 
 nohup cargo run --bin mysticeti -- dry-run --committee-size 4 --authority 0 > v0.log.ansi &
