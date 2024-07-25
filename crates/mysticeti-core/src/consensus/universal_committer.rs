@@ -38,7 +38,7 @@ impl UniversalCommitter {
 
         // Try to decide as many leaders as possible, starting with the highest round.
         let mut leaders = VecDeque::new();
-        for round in (last_decided_round..=highest_known_round - self.wave_length + 1).rev() {
+        for round in (last_decided_round..=highest_known_round - self.wave_length + 2).rev() {
             for committer in self.committers.iter().rev() {
                 // Skip committers that don't have a leader for this round.
                 let Some(leader) = committer.elect_leader(round) else {
@@ -54,7 +54,7 @@ impl UniversalCommitter {
                         found = true;
                     }
                     Some(LeaderStatus::Skip(ai, rn)) => {
-                        status = LeaderStatus::Skip(*ai, *rn);
+                        status = LeaderStatus::Skip(ai.clone(), rn.clone());
                         found = true;
                     }
                     Some(LeaderStatus::Undecided(ai, rn)) => {
