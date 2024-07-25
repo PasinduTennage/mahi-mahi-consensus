@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::{collections::VecDeque, sync::Arc};
+use std::collections::HashMap;
 
 use super::{base_committer::BaseCommitter, LeaderStatus, DEFAULT_WAVE_LENGTH};
 use crate::{
@@ -19,40 +20,73 @@ pub struct UniversalCommitter {
     block_store: BlockStore,
     committers: Vec<BaseCommitter>,
     metrics: Arc<Metrics>,
+    previously_committed_leaders: HashMap<(AuthorityIndex, RoundNumber), LeaderStatus>,
+    wave_length: u64,
 }
 
 impl UniversalCommitter {
     /// Try to commit part of the dag. This function is idempotent and returns a list of
     /// ordered decided leaders.
-    #[tracing::instrument(skip_all, fields(last_decided = %last_decided))]
-    pub fn try_commit(&self, last_decided: BlockReference) -> Vec<LeaderStatus> {
+    #[tracing::instrument(skip_all, fields(last_decided = % last_decided))]
+    pub fn try_commit(&mut self, last_decided: BlockReference) -> Vec<LeaderStatus> {
         let highest_known_round = self.block_store.highest_round();
+        if highest_known_round < self.wave_length {
+            return Vec::new();
+        }
         let last_decided_round = last_decided.round();
         let last_decided_round_authority = (last_decided.round(), last_decided.authority);
 
         // Try to decide as many leaders as possible, starting with the highest round.
         let mut leaders = VecDeque::new();
-        for round in (last_decided_round..=highest_known_round).rev() {
+        for round in (last_decided_round..=highest_known_round - self.wave_length + 1).rev() {
             for committer in self.committers.iter().rev() {
                 // Skip committers that don't have a leader for this round.
                 let Some(leader) = committer.elect_leader(round) else {
                     continue;
                 };
-                tracing::debug!(
+
+                let mut status = LeaderStatus::Undecided(leader, round);
+                let mut found = false;
+
+                match self.previously_committed_leaders.get(&(leader, round)) {
+                    Some(LeaderStatus::Commit(block)) => {
+                        status = LeaderStatus::Commit(block.clone());
+                        found = true;
+                    }
+                    Some(LeaderStatus::Skip(ai, rn)) => {
+                        status = LeaderStatus::Skip(*ai, *rn);
+                        found = true;
+                    }
+                    Some(LeaderStatus::Undecided(ai, rn)) => {
+                        found = false;
+                    }
+                    None => {
+                        found = false;
+                    }
+                }
+
+                if !found {
+                    tracing::debug!(
                     "Trying to decide {} with {committer}",
                     format_authority_round(leader, round)
                 );
 
-                // Try to directly decide the leader.
-                let mut status = committer.try_direct_decide(leader, round);
-                self.update_metrics(&status, true);
-                tracing::debug!("Outcome of direct rule: {status}");
+                    // Try to directly decide the leader.
+                    status = committer.try_direct_decide(leader, round);
+                    self.update_metrics(&status, true);
+                    tracing::debug!("Outcome of direct rule: {status}");
 
-                // If we can't directly decide the leader, try to indirectly decide it.
-                if !status.is_decided() {
-                    status = committer.try_indirect_decide(leader, round, leaders.iter());
-                    self.update_metrics(&status, false);
-                    tracing::debug!("Outcome of indirect rule: {status}");
+                    // If we can't directly decide the leader, try to indirectly decide it.
+                    if !status.is_decided() {
+                        status = committer.try_indirect_decide(leader, round, leaders.iter());
+                        self.update_metrics(&status, false);
+                        tracing::debug!("Outcome of indirect rule: {status}");
+                    }
+
+                    // if the status is COMMIT put it in the map
+                    if status.is_decided() {
+                        self.previously_committed_leaders.insert((leader, round), status.clone());
+                    }
                 }
 
                 leaders.push_front(status);
@@ -159,6 +193,8 @@ impl UniversalCommitterBuilder {
             block_store: self.block_store,
             committers,
             metrics: self.metrics,
+            previously_committed_leaders: HashMap::new(),
+            wave_length: self.wave_length,
         }
     }
 }
