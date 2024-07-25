@@ -16,7 +16,7 @@ eyre = { workspace = true }
 futures = { workspace = true }
 gettid = "0.1.2"
 hex = "0.4.3"
-hyper = "0.14.26"
+hyper = "1.4.1"
 libc = "0.2.146"
 memmap2 = "0.7.0"
 
