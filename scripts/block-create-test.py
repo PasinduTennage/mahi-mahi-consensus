@@ -14,7 +14,7 @@ def extract_created_blocks(filename):
                 number = int(number)
                 created_blocks.append((letter, number))
     # print number of created blocks in the filename
-    print(f"Number of created blocks in {filename}: {len(created_blocks)}")g
+    print(f"Number of created blocks in {filename}: {len(created_blocks)}")
     return created_blocks
 
 
