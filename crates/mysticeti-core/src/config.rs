@@ -75,11 +75,11 @@ pub mod node_defaults {
     }
 
     pub fn default_number_of_leaders() -> usize {
-        1
+        4
     }
 
     pub fn default_enable_pipelining() -> bool {
-        false
+        true
     }
 
     pub fn default_consensus_only() -> bool {
