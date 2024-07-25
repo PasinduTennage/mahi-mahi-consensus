@@ -215,6 +215,23 @@ impl BaseCommitter {
     fn can_skip_leader(&self, voting_round: RoundNumber, leader: AuthorityIndex, leader_round: RoundNumber) -> bool {
         let leader_blocks = self.block_store.get_blocks_at_authority_round(leader, leader_round);
         let voting_blocks = self.block_store.get_blocks_by_round(voting_round);
+
+        // check if there are enough blocks in the voting round
+        let mut votes_count_aggregator = StakeAggregator::<QuorumThreshold>::new();
+
+        let mut has_quorum = false;
+
+        for voting_block in &voting_blocks {
+            if votes_count_aggregator.add(voting_block.reference().authority, &self.committee) {
+                has_quorum = true;
+                break
+            }
+        }
+
+        if !has_quorum {
+            return false;
+        }
+
         let mut skip_stake_aggregator = StakeAggregator::<SkipThreshold>::new();
         for voting_block in &voting_blocks {
             for leader_block in &leader_blocks {
