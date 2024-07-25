@@ -41,9 +41,9 @@ def process_files(file_list):
         blocks = extract_created_blocks(filename)
         is_correct, error = check_blocks(blocks)
         if not is_correct:
-            all_results.append(f"File {filename} is incorrect: {error}")
+            all_results.append(f"{filename} does not creates blocks correctly: {error}")
         else:
-            all_results.append(f"File {filename} is correct.")
+            all_results.append(f"{filename} creates blocks correctly.")
     return all_results
 
 

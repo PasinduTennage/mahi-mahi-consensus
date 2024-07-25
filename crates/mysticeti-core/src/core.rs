@@ -74,7 +74,7 @@ pub enum MetaStatement {
 impl<H: BlockHandler> Core<H> {
 
     pub const ATTACK_SEVERITY: u64 = 100;
-    pub const ATTACK_DELAY: u64 = 0;
+    pub const ATTACK_DELAY: u64 = 1;
     #[allow(clippy::too_many_arguments)]
     pub fn open(
         mut block_handler: H,
@@ -335,7 +335,7 @@ impl<H: BlockHandler> Core<H> {
     pub fn is_attacked(&self) -> bool {
         let random_number = rand::thread_rng().gen_range(0..Self::ATTACK_SEVERITY);
         if random_number < 10 {
-            // println!("Node under attacked");
+            tracing::debug!("{} is attacked", self.authority);
             true
         }else{
             false

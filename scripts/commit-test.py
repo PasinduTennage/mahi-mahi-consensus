@@ -55,4 +55,7 @@ if __name__ == "__main__":
     file_list = args.files
 
     result = check_files(file_list)
-    print(result)
+    if result:
+        print("Safety achieved")
+    else:
+        print("Safety lost")
