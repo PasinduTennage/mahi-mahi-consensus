@@ -28,7 +28,7 @@ impl UniversalCommitter {
     /// Try to commit part of the dag. This function is idempotent and returns a list of
     /// ordered decided leaders.
     #[tracing::instrument(skip_all, fields(last_decided = % last_decided))]
-    pub fn try_commit(&mut self, last_decided: BlockReference) -> Vec<LeaderStatus> {
+    pub fn try_commit(&mut self, last_decided: BlockReference, threshold_round: RoundNumber) -> Vec<LeaderStatus> {
         let highest_known_round = self.block_store.highest_round();
         if highest_known_round < self.wave_length {
             return Vec::new();
@@ -38,7 +38,10 @@ impl UniversalCommitter {
 
         // Try to decide as many leaders as possible, starting with the highest round.
         let mut leaders = VecDeque::new();
-        for round in (last_decided_round..=highest_known_round - self.wave_length + 2).rev() {
+        for round in (last_decided_round..=highest_known_round).rev() {
+            if round  + self.wave_length > threshold_round{
+                continue
+            }
             for committer in self.committers.iter().rev() {
                 // Skip committers that don't have a leader for this round.
                 let Some(leader) = committer.elect_leader(round) else {
@@ -51,10 +54,12 @@ impl UniversalCommitter {
                 match self.previously_committed_leaders.get(&(leader, round)) {
                     Some(LeaderStatus::Commit(block)) => {
                         status = LeaderStatus::Commit(block.clone());
+                        tracing::debug!("Already Committed {}", format_authority_round(leader, round));
                         found = true;
                     }
                     Some(LeaderStatus::Skip(ai, rn)) => {
                         status = LeaderStatus::Skip(ai.clone(), rn.clone());
+                        tracing::debug!("Already Skipped {}", format_authority_round(leader, round));
                         found = true;
                     }
                     Some(LeaderStatus::Undecided(ai, rn)) => {

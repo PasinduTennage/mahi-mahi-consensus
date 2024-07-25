@@ -370,7 +370,7 @@ impl<H: BlockHandler> Core<H> {
     pub fn try_commit(&mut self) -> Vec<Data<StatementBlock>> {
         let sequence: Vec<_> = self
             .committer
-            .try_commit(self.last_commit_leader)
+            .try_commit(self.last_commit_leader, self.threshold_clock.get_round())
             .into_iter()
             .filter_map(|leader| leader.into_decided_block())
             .collect();

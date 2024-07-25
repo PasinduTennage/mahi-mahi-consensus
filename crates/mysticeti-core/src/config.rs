@@ -75,7 +75,7 @@ pub mod node_defaults {
     }
 
     pub fn default_number_of_leaders() -> usize {
-        2
+        1
     }
 
     pub fn default_enable_pipelining() -> bool {

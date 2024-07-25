@@ -31,7 +31,7 @@ fn direct_commit() {
         .build();
 
         let last_committed = BlockReference::new_test(0, 0);
-        let sequence = committer.try_commit(last_committed);
+        let sequence = committer.try_commit(last_committed, );
         tracing::info!("Commit sequence: {sequence:?}");
 
         assert_eq!(sequence.len(), number_of_leaders);
@@ -69,12 +69,12 @@ fn idempotence() {
 
         // Commit one block.
         let last_committed = BlockReference::new_test(0, 0);
-        let committed = committer.try_commit(last_committed);
+        let committed = committer.try_commit(last_committed, );
 
         // Ensure we don't commit it again.
         let last = committed.into_iter().last().unwrap();
         let last_committed = BlockReference::new_test(last.authority(), last.round());
-        let sequence = committer.try_commit(last_committed);
+        let sequence = committer.try_commit(last_committed, );
         tracing::info!("Commit sequence: {sequence:?}");
         assert!(sequence.is_empty());
     }
@@ -103,7 +103,7 @@ fn multiple_direct_commit() {
         .with_number_of_leaders(number_of_leaders)
         .build();
 
-        let sequence = committer.try_commit(last_committed);
+        let sequence = committer.try_commit(last_committed, );
         tracing::info!("Commit sequence: {sequence:?}");
         assert_eq!(sequence.len(), number_of_leaders);
 
@@ -148,7 +148,7 @@ fn direct_commit_partial_round() {
     .with_number_of_leaders(number_of_leaders)
     .build();
 
-    let sequence = committer.try_commit(last_committed);
+    let sequence = committer.try_commit(last_committed, );
     tracing::info!("Commit sequence: {sequence:?}");
     assert_eq!(sequence.len(), number_of_leaders - 1);
 
@@ -186,7 +186,7 @@ fn direct_commit_late_call() {
     .build();
 
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed);
+    let sequence = committer.try_commit(last_committed, );
     tracing::info!("Commit sequence: {sequence:?}");
 
     assert_eq!(sequence.len(), number_of_leaders * n as usize);
@@ -227,7 +227,7 @@ fn no_genesis_commit() {
         .build();
 
         let last_committed = BlockReference::new_test(0, 0);
-        let sequence = committer.try_commit(last_committed);
+        let sequence = committer.try_commit(last_committed, );
         tracing::info!("Commit sequence: {sequence:?}");
         assert!(sequence.is_empty());
     }
@@ -276,7 +276,7 @@ fn no_leader() {
     .build();
 
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed);
+    let sequence = committer.try_commit(last_committed, );
     tracing::info!("Commit sequence: {sequence:?}");
 
     assert_eq!(sequence.len(), number_of_leaders);
@@ -341,7 +341,7 @@ fn direct_skip() {
     .build();
 
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed);
+    let sequence = committer.try_commit(last_committed, );
     tracing::info!("Commit sequence: {sequence:?}");
 
     assert_eq!(sequence.len(), number_of_leaders);
@@ -452,7 +452,7 @@ fn indirect_commit() {
     .build();
 
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed);
+    let sequence = committer.try_commit(last_committed, );
     tracing::info!("Commit sequence: {sequence:?}");
     assert_eq!(sequence.len(), 2 * number_of_leaders);
 
@@ -530,7 +530,7 @@ fn indirect_skip() {
     .build();
 
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed);
+    let sequence = committer.try_commit(last_committed, );
     tracing::info!("Commit sequence: {sequence:?}");
     assert_eq!(sequence.len(), 3 * number_of_leaders);
 
@@ -640,7 +640,7 @@ fn undecided() {
     .build();
 
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed);
+    let sequence = committer.try_commit(last_committed, );
     tracing::info!("Commit sequence: {sequence:?}");
     assert!(sequence.is_empty());
 }
