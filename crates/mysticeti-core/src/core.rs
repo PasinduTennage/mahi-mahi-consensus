@@ -431,7 +431,7 @@ impl<H: BlockHandler> Core<H> {
             for block in &commit.blocks {
                 self.epoch_manager
                     .observe_committed_block(block, &self.committee);
-                println!("Committed block: {:?}", block.author_round());
+                tracing::debug!("Committed block: {:?}", block.author_round());
             }
             commit_data.push(CommitData::from(commit));
         }
