@@ -12,3 +12,8 @@ nohup cargo run --bin mysticeti -- dry-run --committee-size 4 --authority 3 > v3
 
 sleep 5
 pkill -f mysticeti
+
+sleep 5
+
+python3 scripts/block-create-test.py v0.log.ansi v1.log.ansi v2.log.ansi v3.log.ansi
+python3 scripts/commit-test.py v0.log.ansi v1.log.ansi v2.log.ansi v3.log.ansi
