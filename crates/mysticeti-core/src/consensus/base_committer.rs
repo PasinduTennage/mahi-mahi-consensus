@@ -224,28 +224,28 @@ impl BaseCommitter {
         for voting_block in &voting_blocks {
             if votes_count_aggregator.add(voting_block.reference().authority, &self.committee) {
                 has_quorum = true;
-                break
+                break;
             }
         }
 
         if !has_quorum {
             return false;
         }
-
-        let mut skip_stake_aggregator = StakeAggregator::<SkipThreshold>::new();
-        for voting_block in &voting_blocks {
-            for leader_block in &leader_blocks {
+        // 2f+1 blames  -- skip        ;
+        for leader_block in &leader_blocks {
+            let mut skip_stake_aggregator = StakeAggregator::<QuorumThreshold>::new();
+            for voting_block in &voting_blocks {
                 if self.is_vote(voting_block, leader_block) {
                     tracing::trace!(
                         "[{self}] {voting_block:?} is a vote for leader {leader_block:?}"
                     );
                     if skip_stake_aggregator.add(voting_block.reference().authority, &self.committee) {
-                        return false;
+                        return true;
                     }
                 }
             }
         }
-        true
+        false
     }
 
     /// Check whether the specified leader has enough support (that is, 2f+1 certificates)

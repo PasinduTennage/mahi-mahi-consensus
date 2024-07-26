@@ -46,7 +46,7 @@ pub const LATENCY_SQUARED_S: &str = "latency_squared_s";
 #[derive(Clone)]
 pub struct Metrics {
     pub benchmark_duration: IntCounter,
-    pub latency_s: HistogramVec,
+    pub latency_s: HistogramVec, // get, specify the label of shared object, metrics address? curl,
     pub latency_squared_s: CounterVec,
     pub committed_leaders_total: IntCounterVec,
     pub leader_timeout_total: IntCounter,
