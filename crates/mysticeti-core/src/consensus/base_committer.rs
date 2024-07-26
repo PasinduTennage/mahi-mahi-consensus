@@ -235,9 +235,9 @@ impl BaseCommitter {
         for leader_block in &leader_blocks {
             let mut skip_stake_aggregator = StakeAggregator::<QuorumThreshold>::new();
             for voting_block in &voting_blocks {
-                if self.is_vote(voting_block, leader_block) {
+                if !self.is_vote(voting_block, leader_block) {
                     tracing::trace!(
-                        "[{self}] {voting_block:?} is a vote for leader {leader_block:?}"
+                        "[{self}] {voting_block:?} is not a vote for leader {leader_block:?}"
                     );
                     if skip_stake_aggregator.add(voting_block.reference().authority, &self.committee) {
                         return true;
