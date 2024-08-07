@@ -26,9 +26,8 @@ fn direct_commit() {
         test_metrics(),
     )
     .build(); // create a committer 
-
     let last_committed = BlockReference::new_test(0, 0); // nothing in the last committed history.
-    let threshold_round = 0;
+    let threshold_round = 4;
     let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
 
@@ -468,7 +467,7 @@ fn commit_with_booster() {
     }
 }
 
-/// The booster round ensure we may commit even with a single link to the leader.
+/// The booster round ensure we may commit even with a single link to the leader. DONE
 #[test]
 #[tracing_test::traced_test]
 fn commit_single_link_leader_with_booster() {
@@ -517,18 +516,18 @@ fn commit_single_link_leader_with_booster() {
     .with_wave_length(wave_length)
     .build();
 
-    let threshold_round=4;
+    let threshold_round=DEFAULT_WAVE_LENGTH-1;
     let last_committed = BlockReference::new_test(0, 0);
     let sequence = committer.try_commit(last_committed,threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
     assert!(sequence.is_empty());
 }
 
-/// If there is no leader with enough support nor blame, we commit nothing.
+/// If there is no leader with enough support nor blame, we commit nothing. DONE
 #[test]
 #[tracing_test::traced_test]
 fn undecided() {
-    let mut committee = committee(4);
+    let committee = committee(4);
     let wave_length = DEFAULT_WAVE_LENGTH;
 
     let mut block_writer = TestBlockWriter::new(&committee);
@@ -572,7 +571,7 @@ fn undecided() {
     )
     .with_wave_length(wave_length)
     .build();
-    let threshold_round=4;
+    let threshold_round=DEFAULT_WAVE_LENGTH-1;
 
     let last_committed = BlockReference::new_test(0, 0);
     let sequence = committer.try_commit(last_committed,threshold_round);
