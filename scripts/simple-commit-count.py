@@ -31,6 +31,7 @@ def process_logs(file_list):
     print(f"Total Commit(X): {total_commit}")
     print(f"Total Skip(X): {total_skip}")
     print(f"Total Undecided(X): {total_undecided}")
+    print(f"Skip/Commit: {total_skip*100/total_commit}%")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
