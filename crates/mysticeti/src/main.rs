@@ -75,11 +75,16 @@ enum Operation {
 async fn main() -> Result<()> {
     // Nice colored error messages.
     color_eyre::install()?;
+
+    // setting up a filter for logging using the EnvFilter from the tracing crate.
+    // The code is used to create a logging filter that determines what level
+    // of logs will be captured, depending on the environment settings.
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
 
     // Configure a subscriber to remove ANSI codes and customize the format
+    // handles the formatting and output of log messages.
     let subscriber = FmtSubscriber::builder()
         .with_env_filter(filter)
         .with_ansi(false) // Disable ANSI codes for clean log output
