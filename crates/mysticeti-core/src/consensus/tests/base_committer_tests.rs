@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    consensus::{
+    config::node_defaults::default_wave_length, consensus::{
         universal_committer::UniversalCommitterBuilder,
         LeaderStatus,
         DEFAULT_WAVE_LENGTH,
-    },
-    test_util::{build_dag, build_dag_layer, committee, test_metrics, TestBlockWriter},
-    types::BlockReference,
+    }, test_util::{build_dag, build_dag_layer, committee, test_metrics, TestBlockWriter}, types::BlockReference
 };
 
 /// Commit one leader. Done
@@ -72,7 +70,7 @@ fn idempotence() {
     assert!(sequence.is_empty());
 }
 
-/// Commit one by one each leader as the dag progresses in ideal conditions.
+/// Commit one by one each leader as the dag progresses in ideal conditions. DONE
 #[test]
 #[tracing_test::traced_test]
 fn multiple_direct_commit() {
@@ -80,9 +78,9 @@ fn multiple_direct_commit() {
     let wave_length = DEFAULT_WAVE_LENGTH;
 
     let mut last_committed = BlockReference::new_test(0, 0);
-    for n in 1..=wave_length { //shorten to test
+    for n in 1..=wave_length{ //shorten to test
         // println!("n: {:?}", n);
-        let enough_blocks = wave_length * 2 + n; // start with 11 and increment by 1. 11, 12, 13,...
+        let enough_blocks = wave_length * (n + 1) - 1 ; // 11, 12, 13,...
         let mut block_writer = TestBlockWriter::new(&committee);
         build_dag(&committee, &mut block_writer, None, enough_blocks);
         let mut committer = UniversalCommitterBuilder::new(
@@ -92,22 +90,27 @@ fn multiple_direct_commit() {
         )
         .with_wave_length(wave_length)
         .build();
-
-        let threshold_round = enough_blocks+1; // we expect it to be every wave end. Start at 10, 15, so on.
-        println!("last_committed: {:?}", last_committed);
+        let mut counter = 0;
+        // if n % 5 == 0 {
+        //     counter += wave_length;
+        // }
+        let threshold_round = enough_blocks+1;
         let sequence: Vec<LeaderStatus> = committer.try_commit(last_committed,threshold_round);
         tracing::info!("Commit sequence: {sequence:?}");
         assert_eq!(sequence.len(), 1);
 
-        let leader_round = enough_blocks - wave_length; // 1, 6, 11,...
+        let leader_round = n *wave_length; // leader round value will automatically calculate to wave.
+        // println!("leader_round value: {:?}", leader_round);
+        // println!("leader_round: {:?}", committee.elect_leader(leader_round));
+
         if let LeaderStatus::Commit(ref block) = sequence[0] {
             assert_eq!(block.author(), committee.elect_leader(leader_round));
         } else {
             panic!("Expected a committed leader")
         }
 
-        let max = sequence.iter().max().unwrap();
-        last_committed = BlockReference::new_test(max.authority(), max.round());
+        let last = sequence.into_iter().last().unwrap();
+        last_committed = BlockReference::new_test(last.authority(), last.round());
     }
 }
 
