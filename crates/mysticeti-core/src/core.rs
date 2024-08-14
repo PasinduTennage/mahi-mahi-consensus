@@ -186,7 +186,7 @@ impl<H: BlockHandler> Core<H> {
 
         let file_name = format!("output-{}.txt", authority);
 
-        // Start a new asynchronous task using the receiver (rx)
+        // start a new asynchronous task using the receiver (rx)
         tokio::spawn(async move {
             // Try to open the file for writing
             let mut file = match tokio::fs::File::create(&file_name).await {
