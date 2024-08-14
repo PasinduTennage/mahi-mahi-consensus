@@ -199,6 +199,7 @@ impl<H: BlockHandler> Core<H> {
 
             // Continuously receive messages from the channel and write them to the file
             while let Some((start, end, count)) = rx.recv().await {
+                println!("Received: {:?}, {:?}, {:?}", start, end,count);
                 let output = format!("{:?}, {:?}\n", start, end);
                 for _ in 0..count {
                     if let Err(e) = tokio::io::AsyncWriteExt::write_all(&mut file, output.as_bytes()).await {
@@ -466,7 +467,8 @@ impl<H: BlockHandler> Core<H> {
                     .observe_committed_block(block, &self.committee);
                 tracing::debug!("Committed block: {:?}", block.author_round());
                 if let Some(tx) = &self.tx {
-                    if let Err(e) = tx.try_send((block.meta_creation_time().checked_sub(self.start_time).unwrap_or_default().as_micros(), timestamp_utc().checked_sub(self.start_time).unwrap_or_default().as_micros(), block.statements().len())) {
+                    let num_trans = self.block_store.get_block(*block.reference()).unwrap().statements().len();
+                    if let Err(e) = tx.try_send((block.meta_creation_time().checked_sub(self.start_time).unwrap_or_default().as_micros(), timestamp_utc().checked_sub(self.start_time).unwrap_or_default().as_micros(), num_trans)) {
                         tracing::debug!("Failed to send to channel: {:?}", e);
                     }
                 } else {
