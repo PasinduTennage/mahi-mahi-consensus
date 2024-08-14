@@ -263,7 +263,7 @@ impl<H: BlockHandler> Core<H> {
             .utilization_timer("Core::try_new_block");
         let clock_round = self.threshold_clock.get_round();
         if clock_round <= self.last_proposed() {
-            tracing::debug!("Did not create block because the TLC round {} is <= last proposed round {}", clock_round, self.last_proposed());
+            tracing::warn!("Did not create block because the TLC round {} is <= last proposed round {}", clock_round, self.last_proposed());
             return None;
         }
 
@@ -467,10 +467,10 @@ impl<H: BlockHandler> Core<H> {
                 tracing::debug!("Committed block: {:?}", block.author_round());
                 if let Some(tx) = &self.tx {
                     if let Err(e) = tx.try_send((block.meta_creation_time().checked_sub(self.start_time).unwrap_or_default().as_micros(), timestamp_utc().checked_sub(self.start_time).unwrap_or_default().as_micros(), block.statements().len())) {
-                        tracing::error!("Failed to send to channel: {:?}", e);
+                        tracing::debug!("Failed to send to channel: {:?}", e);
                     }
                 } else {
-                    tracing::error!("Channel not initialized");
+                    tracing::debug!("Channel not initialized");
                 }
             }
             commit_data.push(CommitData::from(commit));
