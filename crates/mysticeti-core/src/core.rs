@@ -199,7 +199,6 @@ impl<H: BlockHandler> Core<H> {
 
             // Continuously receive messages from the channel and write them to the file
             while let Some((start, end, count)) = rx.recv().await {
-                println!("Received: {:?}, {:?}, {:?}", start, end,count);
                 let output = format!("{:?}, {:?}\n", start, end);
                 for _ in 0..count {
                     if let Err(e) = tokio::io::AsyncWriteExt::write_all(&mut file, output.as_bytes()).await {
