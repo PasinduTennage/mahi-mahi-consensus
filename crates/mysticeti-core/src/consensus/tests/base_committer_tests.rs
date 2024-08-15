@@ -90,10 +90,10 @@ fn multiple_direct_commit() {
         )
         .with_wave_length(wave_length)
         .build();
-        let mut counter = 0;
-        // if n % 5 == 0 {
-        //     counter += wave_length;
-        // }
+        // let mut counter = 0;
+        // // if n % 5 == 0 {
+        // //     counter += wave_length;
+        // // }
         let threshold_round = enough_blocks+1;
         let sequence: Vec<LeaderStatus> = committer.try_commit(last_committed,threshold_round);
         tracing::info!("Commit sequence: {sequence:?}");
@@ -121,7 +121,7 @@ fn direct_commit_late_call() {
     let committee = committee(4);
     let wave_length = DEFAULT_WAVE_LENGTH;
 
-    let n = wave_length*2;
+    let n: u64 = wave_length*2;
     let enough_blocks = wave_length * n+wave_length;
     let mut block_writer = TestBlockWriter::new(&committee);
     build_dag(&committee, &mut block_writer, None, enough_blocks);
@@ -258,7 +258,7 @@ fn direct_skip() {
         .collect();
 
     // Add enough blocks to reach the decision round of the first leader.
-    let decision_round_1 = 2 * wave_length - 1;
+    let decision_round_1 = 2 * wave_length;
     build_dag(
         &committee,
         &mut block_writer,
@@ -275,7 +275,7 @@ fn direct_skip() {
     .with_wave_length(wave_length)
     .build();
 
-    let threshold_round = wave_length*2;
+    let threshold_round = decision_round_1+1;
     let last_committed = BlockReference::new_test(0, 0);
     let sequence = committer.try_commit(last_committed,threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
@@ -371,7 +371,7 @@ fn indirect_commit() {
     )
     .with_wave_length(wave_length)
     .build();
-    let threshold_round = decision_round_3;
+    let threshold_round = decision_round_3+1;
     let last_committed = BlockReference::new_test(0, 0);
     let sequence = committer.try_commit(last_committed,threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
@@ -569,7 +569,7 @@ fn undecided() {
     let references = build_dag_layer(connections.collect(), &mut block_writer);
 
     // Add enough blocks to reach the decision round of the first leader.
-    let decision_round_1 = wave_length - 1;
+    let decision_round_1 = wave_length;
     build_dag(
         &committee,
         &mut block_writer,
@@ -585,7 +585,7 @@ fn undecided() {
     )
     .with_wave_length(wave_length)
     .build();
-    let threshold_round=wave_length*2;
+    let threshold_round=decision_round_1+1;
 
     let last_committed = BlockReference::new_test(0, 0);
     let sequence = committer.try_commit(last_committed,threshold_round);
