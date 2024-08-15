@@ -389,8 +389,8 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
                 let output = format!("{:?}, {:?}\n", start, end);
                 pending.push_str(&output);
                 counter = counter + 1;
-                if counter == 1000 {
-                    tokio::io::AsyncWriteExt::write_all(&mut file, pending.as_bytes());
+                if counter == 10000 {
+                    tokio::io::AsyncWriteExt::write_all(&mut file, pending.as_bytes()).await;
                     counter = 0;
                     pending.clear();
                 }
