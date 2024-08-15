@@ -6,9 +6,10 @@ use std::{
     mem,
     sync::{atomic::AtomicU64, Arc},
 };
-
+use std::time::Duration;
 use rand::Rng;
-
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::{Sender, Receiver};
 use minibytes::Bytes;
 
 use crate::{
@@ -59,6 +60,8 @@ pub struct Core<H: BlockHandler> {
     epoch_manager: EpochManager,
     rounds_in_epoch: RoundNumber,
     committer: UniversalCommitter,
+    tx: Option<Sender<(u128, u128, usize)>>,
+    start_time: Duration,
 }
 
 pub struct CoreOptions {
@@ -149,6 +152,8 @@ impl<H: BlockHandler> Core<H> {
             public_config.parameters.number_of_leaders
         );
 
+        let (tx, mut rx): (Sender<(u128, u128, usize)>, Receiver<(u128, u128, usize)>) = mpsc::channel(10000);
+
         let mut this = Self {
             block_manager,
             pending,
@@ -167,6 +172,8 @@ impl<H: BlockHandler> Core<H> {
             epoch_manager,
             rounds_in_epoch: public_config.parameters.rounds_in_epoch,
             committer,
+            tx: Some(tx.clone()),
+            start_time: timestamp_utc(),
         };
 
         if !unprocessed_blocks.is_empty() {
@@ -176,6 +183,31 @@ impl<H: BlockHandler> Core<H> {
             );
             this.run_block_handler(&unprocessed_blocks);
         }
+
+        let file_name = format!("output-{}.txt", authority);
+
+        // start a new asynchronous task using the receiver (rx)
+        tokio::spawn(async move {
+            // Try to open the file for writing
+            let mut file = match tokio::fs::File::create(&file_name).await {
+                Ok(f) => f,
+                Err(e) => {
+                    eprintln!("Failed to create file {}: {}", file_name, e);
+                    return;
+                }
+            };
+
+            // Continuously receive messages from the channel and write them to the file
+            while let Some((start, end, count)) = rx.recv().await {
+                let output = format!("{:?}, {:?}\n", start, end);
+                for _ in 0..count {
+                    if let Err(e) = tokio::io::AsyncWriteExt::write_all(&mut file, output.as_bytes()).await {
+                        eprintln!("Failed to write to file {}: {}", file_name, e);
+                        return;
+                    }
+                }
+            }
+        });
 
         this
     }
@@ -231,7 +263,7 @@ impl<H: BlockHandler> Core<H> {
             .utilization_timer("Core::try_new_block");
         let clock_round = self.threshold_clock.get_round();
         if clock_round <= self.last_proposed() {
-            tracing::debug!("Did not create block because the TLC round {} is <= last proposed round {}", clock_round, self.last_proposed());
+            tracing::warn!("Did not create block because the TLC round {} is <= last proposed round {}", clock_round, self.last_proposed());
             return None;
         }
 
@@ -433,6 +465,14 @@ impl<H: BlockHandler> Core<H> {
                 self.epoch_manager
                     .observe_committed_block(block, &self.committee);
                 tracing::debug!("Committed block: {:?}", block.author_round());
+                if let Some(tx) = &self.tx {
+                    let num_trans = self.block_store.get_block(*block.reference()).unwrap().statements().len();
+                    if let Err(e) = tx.try_send((block.meta_creation_time().checked_sub(self.start_time).unwrap_or_default().as_micros(), timestamp_utc().checked_sub(self.start_time).unwrap_or_default().as_micros(), num_trans)) {
+                        tracing::debug!("Failed to send to channel: {:?}", e);
+                    }
+                } else {
+                    tracing::debug!("Channel not initialized");
+                }
             }
             commit_data.push(CommitData::from(commit));
         }

@@ -1,0 +1,5 @@
+initial_delay:
+  secs: 10
+  nanos: 0
+load: 10000
+transaction_size: 512
