@@ -383,10 +383,19 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
                 }
             };
 
-            // Continuously receive messages from the channel and write them to the file
+            let mut counter = 0;
+            let mut pending = String::from("");
             while let Some((start, end)) = rx.recv().await {
                 let output = format!("{:?}, {:?}\n", start, end);
-                let _ = tokio::io::AsyncWriteExt::write_all(&mut file, output.as_bytes()).await;
+                pending.push_str(&output);
+                counter = counter + 1;
+                if counter == 1000 {
+                    if let Err(e) = tokio::io::AsyncWriteExt::write_all(&mut file, pending.as_bytes()).await {
+                        eprintln!("Failed to write to file: {}", e);
+                    }
+                    counter = 0;
+                    pending.clear();
+                }
             }
         });
         let consensus_only = env::var("CONSENSUS_ONLY").is_ok();
