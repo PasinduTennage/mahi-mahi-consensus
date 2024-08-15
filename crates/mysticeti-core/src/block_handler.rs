@@ -370,7 +370,7 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
         handler: H,
         authority: AuthorityIndex,
     ) -> Self {
-        let (tx, mut rx): (Sender<(u128, u128)>, Receiver<(u128, u128)>) = mpsc::channel(10000);
+        let (tx, mut rx): (Sender<(u128, u128)>, Receiver<(u128, u128)>) = mpsc::channel(10000000);
         let file_name = format!("client-times-{}.txt", authority);
 
         // start a new asynchronous task using the receiver (rx)
@@ -390,9 +390,7 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
                 pending.push_str(&output);
                 counter = counter + 1;
                 if counter == 1000 {
-                    if let Err(e) = tokio::io::AsyncWriteExt::write_all(&mut file, pending.as_bytes()).await {
-                        eprintln!("Failed to write to file: {}", e);
-                    }
+                    tokio::io::AsyncWriteExt::write_all(&mut file, pending.as_bytes());
                     counter = 0;
                     pending.clear();
                 }
@@ -458,7 +456,7 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
             .inc_by(square_latency);
 
         if let Some(tx) = &self.tx {
-            let result = tx.blocking_send((
+            let result = tx.try_send((
                 tx_submission_timestamp
                     .checked_sub(self.start_time_duration)
                     .unwrap_or_default()
