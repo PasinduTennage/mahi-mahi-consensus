@@ -7,7 +7,7 @@ nohup cargo run --bin mysticeti -- run --authority 1 --committee-path /home/tenn
 nohup cargo run --bin mysticeti -- run --authority 2 --committee-path /home/tennage/Documents/asyncmysticeti/assets/committee.yaml --public-config-path /home/tennage/Documents/asyncmysticeti/assets/public-config.yaml --private-config-path /home/tennage/Documents/asyncmysticeti/assets/private-config-2.yaml --client-parameters-path /home/tennage/Documents/asyncmysticeti/scripts/client-parameters.yml >v2.log.ansi &
 nohup cargo run --bin mysticeti -- run --authority 3 --committee-path /home/tennage/Documents/asyncmysticeti/assets/committee.yaml --public-config-path /home/tennage/Documents/asyncmysticeti/assets/public-config.yaml --private-config-path /home/tennage/Documents/asyncmysticeti/assets/private-config-3.yaml --client-parameters-path /home/tennage/Documents/asyncmysticeti/scripts/client-parameters.yml >v3.log.ansi &
 
-sleep 20
+sleep 60
 
 
 
