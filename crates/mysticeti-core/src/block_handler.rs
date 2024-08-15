@@ -456,8 +456,22 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
             .latency_squared_s
             .with_label_values(&["shared"])
             .inc_by(square_latency);
+
         if let Some(tx) = &self.tx {
-            let _ = tx.blocking_send((tx_submission_timestamp.checked_sub(self.start_time_duration).unwrap_or_default().as_micros(), current_timestamp.checked_sub(self.start_time_duration.clone()).unwrap_or_default().as_micros()));
+            let result = tx.blocking_send((
+                tx_submission_timestamp
+                    .checked_sub(self.start_time_duration)
+                    .unwrap_or_default()
+                    .as_micros(),
+                current_timestamp
+                    .checked_sub(self.start_time_duration)
+                    .unwrap_or_default()
+                    .as_micros(),
+            ));
+
+            if let Err(e) = result {
+                eprintln!("Failed to send timestamp: {}", e);
+            }
         }
     }
 }
