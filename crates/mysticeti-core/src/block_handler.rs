@@ -371,7 +371,7 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
         authority: AuthorityIndex,
     ) -> Self {
         let (tx, mut rx): (Sender<(u128, u128)>, Receiver<(u128, u128)>) = mpsc::channel(10000);
-        let file_name = format!("output-{}.txt", authority);
+        let file_name = format!("client-times-{}.txt", authority);
 
         // start a new asynchronous task using the receiver (rx)
         tokio::spawn(async move {
@@ -386,7 +386,7 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
             // Continuously receive messages from the channel and write them to the file
             while let Some((start, end)) = rx.recv().await {
                 let output = format!("{:?}, {:?}\n", start, end);
-                let _ = tokio::io::AsyncWriteExt::write_all(&mut file, output.as_bytes());
+                let _ = tokio::io::AsyncWriteExt::write_all(&mut file, output.as_bytes()).await;
             }
         });
         let consensus_only = env::var("CONSENSUS_ONLY").is_ok();
@@ -448,9 +448,7 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
             .with_label_values(&["shared"])
             .inc_by(square_latency);
         if let Some(tx) = &self.tx {
-            if let Err(e) = tx.try_send((tx_submission_timestamp.checked_sub(self.start_time_duration).unwrap_or_default().as_micros(), current_timestamp.checked_sub(self.start_time_duration.clone()).unwrap_or_default().as_micros())) {
-                tracing::debug!("Failed to send to channel: {:?}", e);
-            }
+            let _ = tx.blocking_send((tx_submission_timestamp.checked_sub(self.start_time_duration).unwrap_or_default().as_micros(), current_timestamp.checked_sub(self.start_time_duration.clone()).unwrap_or_default().as_micros()));
         }
     }
 }
