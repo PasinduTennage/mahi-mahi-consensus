@@ -1,15 +1,11 @@
 pwd=$(pwd)
-. "${pwd}"/experiments/ip.sh
+. "${pwd}"/scripts/ip.sh
 
-rm client/bin/client
-rm replica/bin/replica
-
-go build -v -o ./client/bin/client ./client/
-go build -v -o ./replica/bin/replica ./replica/
+cargo build
 
 rm -r logs/ ; mkdir logs/
 
-reset_directory="sudo rm -r /home/${username}/baxos; mkdir -p /home/${username}/baxos/logs/"
+reset_directory="sudo rm -r /home/${username}/amystecity; mkdir -p /home/${username}/amystecity/logs/"
 kill_instances="pkill replica ; pkill client"
 
 remote_home_path="/home/${username}/baxos/"
