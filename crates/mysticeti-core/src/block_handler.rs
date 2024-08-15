@@ -386,10 +386,7 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
             // Continuously receive messages from the channel and write them to the file
             while let Some((start, end)) = rx.recv().await {
                 let output = format!("{:?}, {:?}\n", start, end);
-                if let Err(e) = tokio::io::AsyncWriteExt::write_all(&mut file, output.as_bytes()) {
-                    eprintln!("Failed to write to file {}: {}", file_name, e);
-                    return;
-                }
+                let _ = tokio::io::AsyncWriteExt::write_all(&mut file, output.as_bytes());
             }
         });
         let consensus_only = env::var("CONSENSUS_ONLY").is_ok();
