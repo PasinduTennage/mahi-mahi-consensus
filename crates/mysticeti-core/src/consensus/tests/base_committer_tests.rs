@@ -207,7 +207,7 @@ fn no_leader() {
     //     .map(|authority| (authority, references_without_leader_1.clone()));
     // let references: Vec<BlockReference> = build_dag_layer(connections.collect(), &mut block_writer);
     // come to decision round of leader 1
-    let decision_round_1 = 2 * wave_length-1;
+    let decision_round_1 = 2 * wave_length;
     build_dag(
         &committee,
         &mut block_writer,
