@@ -7,6 +7,7 @@ initial_delay_secs=$6
 initial_delay_nanos=$7
 load=$8
 transaction_size=$9
+iteration=${10}
 
 pwd=$(pwd)
 . "${pwd}"/experiments/dedis-10/ip.sh
@@ -31,7 +32,7 @@ done
 sleep 5
 rm nohup.out
 
-local_output_path="logs/dedis-10/${wave_length}/${number_of_leaders}/pipelining-${enable_pipelining}/synchronizer-${enable_synchronizer}/${load}/${transaction_size}/"
+local_output_path="logs/dedis-10/${wave_length}/${number_of_leaders}/pipelining-${enable_pipelining}/synchronizer-${enable_synchronizer}/${load}/${transaction_size}/${iteration}/"
 
 rm -r "${local_output_path}"; mkdir -p "${local_output_path}"
 

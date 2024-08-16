@@ -22,16 +22,16 @@ with open(input_csv, mode='r') as file:
         load = row[4]
         transaction_size = row[5]
 
+        for i in range(3):
+            command = (
+                f"/bin/bash {bash_file} {wave_length} {number_of_leaders} {enable_pipelining} "
+                f"{consensus_only} {enable_synchronizer} {initial_delay_secs} {initial_delay_nanos} "
+                f"{load} {transaction_size} {i}"
+            )
 
-        command = (
-            f"/bin/bash {bash_file} {wave_length} {number_of_leaders} {enable_pipelining} "
-            f"{consensus_only} {enable_synchronizer} {initial_delay_secs} {initial_delay_nanos} "
-            f"{load} {transaction_size}"
-        )
+            exit_code = os.system(command)
 
-        exit_code = os.system(command)
-
-        if exit_code != 0:
-            print(f"Command failed with exit code {exit_code}: {command}", file=sys.stderr)
-        else:
-            print(f"Command succeeded: {command}")
+            if exit_code != 0:
+                print(f"Command failed with exit code {exit_code}: {command}", file=sys.stderr)
+            else:
+                print(f"Command succeeded: {command}")
