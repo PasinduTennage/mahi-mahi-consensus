@@ -1,4 +1,4 @@
-cert="/home/pasindu/Pictures/pasindu"
+cert="/home/tennage/Pictures/pasindu"
 
 replica1_name=10.156.33.140
 replica1=pasindu@${replica1_name}

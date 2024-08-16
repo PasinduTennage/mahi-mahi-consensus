@@ -70,14 +70,15 @@ scp -i ${cert} ${replica8}:${home_path}client-times-7.txt  ${local_output_path}c
 scp -i ${cert} ${replica9}:${home_path}client-times-8.txt  ${local_output_path}client-times-8.txt
 scp -i ${cert} ${replica10}:${home_path}client-times-9.txt ${local_output_path}client-times-9.txt
 
+output_file=${local_output_path}output.txt
 
-python3 experiments/python/client-stats.py ${local_output_path}client-times-0.txt ${initial_delay_secs} 0
-python3 experiments/python/client-stats.py ${local_output_path}client-times-1.txt ${initial_delay_secs} 1
-python3 experiments/python/client-stats.py ${local_output_path}client-times-2.txt ${initial_delay_secs} 2
-python3 experiments/python/client-stats.py ${local_output_path}client-times-3.txt ${initial_delay_secs} 3
-python3 experiments/python/client-stats.py ${local_output_path}client-times-4.txt ${initial_delay_secs} 4
-python3 experiments/python/client-stats.py ${local_output_path}client-times-5.txt ${initial_delay_secs} 5
-python3 experiments/python/client-stats.py ${local_output_path}client-times-6.txt ${initial_delay_secs} 6
-python3 experiments/python/client-stats.py ${local_output_path}client-times-7.txt ${initial_delay_secs} 7
-python3 experiments/python/client-stats.py ${local_output_path}client-times-8.txt ${initial_delay_secs} 8
-python3 experiments/python/client-stats.py ${local_output_path}client-times-9.txt ${initial_delay_secs} 9
+python3 experiments/python/client-stats.py ${local_output_path}client-times-0.txt ${initial_delay_secs} 0 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-1.txt ${initial_delay_secs} 1 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-2.txt ${initial_delay_secs} 2 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-3.txt ${initial_delay_secs} 3 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-4.txt ${initial_delay_secs} 4 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-5.txt ${initial_delay_secs} 5 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-6.txt ${initial_delay_secs} 6 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-7.txt ${initial_delay_secs} 7 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-8.txt ${initial_delay_secs} 8 >> ${output_file}
+python3 experiments/python/client-stats.py ${local_output_path}client-times-9.txt ${initial_delay_secs} 9 >> ${output_file}
