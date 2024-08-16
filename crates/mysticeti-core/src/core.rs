@@ -73,7 +73,6 @@ pub enum MetaStatement {
 }
 
 impl<H: BlockHandler> Core<H> {
-
     #[allow(clippy::too_many_arguments)]
     pub fn open(
         mut block_handler: H,
@@ -138,6 +137,7 @@ impl<H: BlockHandler> Core<H> {
             UniversalCommitterBuilder::new(committee.clone(), block_store.clone(), metrics.clone())
                 .with_number_of_leaders(public_config.parameters.number_of_leaders)
                 .with_pipeline(public_config.parameters.enable_pipelining)
+                .with_wave_length(public_config.parameters.wave_length)
                 .build();
         tracing::info!(
             "Pipeline enabled: {}",
@@ -146,6 +146,10 @@ impl<H: BlockHandler> Core<H> {
         tracing::info!(
             "Number of leaders: {}",
             public_config.parameters.number_of_leaders
+        );
+        tracing::info!(
+            "Wave length: {}",
+            public_config.parameters.wave_length
         );
 
         let (tx, mut rx): (Sender<(u128, u128, usize)>, Receiver<(u128, u128, usize)>) = mpsc::channel(10000);
