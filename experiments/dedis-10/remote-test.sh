@@ -1,5 +1,11 @@
-arrivalRate=$1
-roundTripTime=$2
+wave_length=$1
+number_of_leaders=$2
+enable_pipelining=$3
+consensus_only=$4
+enable_synchronizer=$5
+initial_delay_secs=$6
+load=$7
+transaction_size=$8
 
 pwd=$(pwd)
 . "${pwd}"/experiments/ip.sh
