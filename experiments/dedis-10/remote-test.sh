@@ -25,13 +25,13 @@ do
     scp -i ${cert} logs/dedis-10/client-parameters.yml "${replicas[${index}]}":"${remote_home_path}"
     sshpass ssh "${replicas[${index}]}" -i ${cert} "${kill_instances}"
     sshpass ssh "${replicas[${index}]}" -i ${cert} "rm ${remote_home_path}storage-${index}/wal"
-    sshpass ssh "${replicas[${index}]}" -i ${cert} ".${remote_replica_path} benchmark-genesis --ips "${replica1_name}" "${replica2_name}" "${replica3_name}" "${replica4_name}" "${replica5_name}" "${replica6_name}" "${replica7_name}" "${replica8_name}" "${replica9_name}" "${replica10_name} --working-directory "${remote_home_path}" --node-parameters-path "${remote_home_path}"node-parameters.yml
+    sshpass ssh "${replicas[${index}]}" -i ${cert} ".${remote_replica_path} benchmark-genesis --ips ${replica1_name}  ${replica2_name} ${replica3_name} ${replica4_name} ${replica5_name} ${replica6_name} ${replica7_name} ${replica8_name} ${replica9_name} ${replica10_name} --working-directory ${remote_home_path} --node-parameters-path ${remote_home_path}node-parameters.yml"
 done
 
 sleep 5
 rm nohup.out
 
-local_output_path="logs/dedis-10/"
+local_output_path="logs/dedis-10/${wave_length}/${number_of_leaders}/synchronizer-${enable_synchronizer}/${load}/"
 
 rm -r "${local_output_path}"; mkdir -p "${local_output_path}"
 
@@ -71,13 +71,13 @@ scp -i ${cert} ${replica9}:${home_path}client-times-8.txt  ${local_output_path}c
 scp -i ${cert} ${replica10}:${home_path}client-times-9.txt ${local_output_path}client-times-9.txt
 
 
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-0.txt 1 0
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-1.txt 1 1
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-2.txt 1 2
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-3.txt 1 3
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-4.txt 1 4
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-5.txt 1 5
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-6.txt 1 6
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-7.txt 1 7
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-8.txt 1 8
-python3 experiments/python/client-stats.py logs/dedis-10/client-times-9.txt 1 9
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-0.txt ${initial_delay_secs} 0
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-1.txt ${initial_delay_secs} 1
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-2.txt ${initial_delay_secs} 2
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-3.txt ${initial_delay_secs} 3
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-4.txt ${initial_delay_secs} 4
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-5.txt ${initial_delay_secs} 5
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-6.txt ${initial_delay_secs} 6
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-7.txt ${initial_delay_secs} 7
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-8.txt ${initial_delay_secs} 8
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-9.txt ${initial_delay_secs} 9

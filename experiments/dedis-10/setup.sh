@@ -10,7 +10,7 @@ install_dependencies="sudo apt-get update"
 
 # build the binary in a remote replica, uncomment when needed
 #sshpass ssh "${replicas[0]}" -i ${cert} "rm -r async-mystecity; git clone https://github.com/PasinduTennage/async-mystecity; cd async-mystecity; git checkout consensus-rework; sudo apt-get install libfontconfig1-dev; source $HOME/.cargo/env; cargo build --release;"
-sshpass ssh "${replicas[0]}" -i ${cert} "cd async-mystecity; git checkout consensus-rework; git pull origin consensus-rework;  source $HOME/.cargo/env; cargo build --release;"
+sshpass ssh "${replicas[0]}" -i ${cert} "rm /home/${username}/async-mystecity/target/release/mysticeti; cd async-mystecity; git checkout consensus-rework; git pull origin consensus-rework;  source $HOME/.cargo/env; cargo build --release;"
 scp -i ${cert} "${replicas[0]}":/home/${username}/async-mystecity/target/release/mysticeti logs/dedis-10/mysticeti
 
 
