@@ -7,9 +7,9 @@ parser = argparse.ArgumentParser(description='Generate node-parameters.yml and c
 
 parser.add_argument('--wave_length', type=int, default=5, help='Wave length (default: 5)')
 parser.add_argument('--number_of_leaders', type=int, default=3, help='Number of leaders (default: 3)')
-parser.add_argument('--enable_pipelining', type=bool, default=True, help='Enable pipelining (default: True)')
-parser.add_argument('--consensus_only', type=bool, default=True, help='Consensus only (default: True)')
-parser.add_argument('--enable_synchronizer', type=bool, default=False, help='Enable synchronizer (default: False)')
+parser.add_argument('--enable_pipelining', type=str, default="True", help='Enable pipelining (default: True)')
+parser.add_argument('--consensus_only', type=str, default="True", help='Consensus only (default: True)')
+parser.add_argument('--enable_synchronizer', type=str, default="False", help='Enable synchronizer (default: False)')
 parser.add_argument('--initial_delay_secs', type=int, default=1, help='Initial delay in seconds (default: 1)')
 parser.add_argument('--initial_delay_nanos', type=int, default=500, help='Initial delay in nanoseconds (default: 500)')
 parser.add_argument('--load', type=int, default=100000, help='Load (default: 100000)')
