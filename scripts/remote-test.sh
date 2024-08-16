@@ -1,4 +1,4 @@
-cargo run --bin mysticeti -- benchmark-genesis --ips 127.0.0.1 127.0.0.1 127.0.0.1 127.0.0.1 --working-directory /home/tennage/Documents/asyncmysticeti/assets/ --node-parameters-path /home/tennage/Documents/asyncmysticeti/scripts/node-parameters.yml
+
 
 export RUST_LOG=warn,mysticeti_core::consensus=debug,mysticeti_core::net_sync=warn,mysticeti_core::core=debug
 
