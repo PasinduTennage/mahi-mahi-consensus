@@ -11,7 +11,7 @@ transaction_size=$9
 pwd=$(pwd)
 . "${pwd}"/experiments/dedis-10/ip.sh
 
-python3 experiments/dedis-10/genrate-configs.py --wave_length "${wave_length}" --number_of_leaders "${number_of_leaders}" --enable_pipelining "${enable_pipelining}" --consensus_only "${consensus_only}" --enable_synchronizer "${enable_synchronizer}" --initial_delay_secs "${initial_delay_secs}" --initial_delay_nanos "${initial_delay_nanos}" --load "${load}" --transaction_size "${transaction_size}" --output_dir "logs/dedis-10/"
+python3 experiments/python/genrate-configs.py --wave_length "${wave_length}" --number_of_leaders "${number_of_leaders}" --enable_pipelining "${enable_pipelining}" --consensus_only "${consensus_only}" --enable_synchronizer "${enable_synchronizer}" --initial_delay_secs "${initial_delay_secs}" --initial_delay_nanos "${initial_delay_nanos}" --load "${load}" --transaction_size "${transaction_size}" --output_dir "logs/dedis-10/"
 
 remote_home_path="/home/${username}/a_mysticeti/"
 kill_instances="pkill -f mysticeti ; pkill -f mysticeti"
@@ -24,6 +24,7 @@ do
     scp -i ${cert} logs/dedis-10/node-parameters.yml   "${replicas[${index}]}":"${remote_home_path}"
     scp -i ${cert} logs/dedis-10/client-parameters.yml "${replicas[${index}]}":"${remote_home_path}"
     sshpass ssh "${replicas[${index}]}" -i ${cert} "${kill_instances}"
+    sshpass ssh "${replicas[${index}]}" -i ${cert} "rm ${remote_home_path}storage-${index}/wal"
     sshpass ssh "${replicas[${index}]}" -i ${cert} ".${remote_replica_path} benchmark-genesis --ips "${replica1_name}" "${replica2_name}" "${replica3_name}" "${replica4_name}" "${replica5_name}" "${replica6_name}" "${replica7_name}" "${replica8_name}" "${replica9_name}" "${replica10_name} --working-directory "${remote_home_path}" --node-parameters-path "${remote_home_path}"node-parameters.yml
 done
 
@@ -56,38 +57,18 @@ do
     sshpass ssh "${replicas[${index}]}" -i ${cert} "${kill_instances}"
 done
 
-#
-#scp -i ${cert} ${replica1}:${output_path}1-consensus.txt ${local_output_path}1-consensus.txt
-#scp -i ${cert} ${replica2}:${output_path}2-consensus.txt ${local_output_path}2-consensus.txt
-#scp -i ${cert} ${replica3}:${output_path}3-consensus.txt ${local_output_path}3-consensus.txt
-#scp -i ${cert} ${replica4}:${output_path}4-consensus.txt ${local_output_path}4-consensus.txt
-#scp -i ${cert} ${replica5}:${output_path}5-consensus.txt ${local_output_path}5-consensus.txt
-#
-#python3 integration-test/python/overlay-test.py ${local_output_path}/1-consensus.txt ${local_output_path}/2-consensus.txt ${local_output_path}/3-consensus.txt ${local_output_path}/4-consensus.txt ${local_output_path}/5-consensus.txt
-#
-#for index in "${!replicas[@]}";
-#do
-#  sshpass ssh "${replicas[${index}]}"  -i ${cert}  "pkill replica; pkill client"
-#done
-#
-#sleep 15
-#
-#echo "Finish test"
-#
-#
-#
-#
-#export RUST_LOG=warn,mysticeti_core::consensus=debug,mysticeti_core::net_sync=warn,mysticeti_core::core=debug
-#
-#
-#sleep 60
-#
-#
-#
-#pkill -f mysticeti
-#
-#sleep 5
-#
-#python3 scripts/block-create-test.py v0.log.ansi v1.log.ansi v2.log.ansi v3.log.ansi
-#python3 scripts/commit-test.py v0.log.ansi v1.log.ansi v2.log.ansi v3.log.ansi
-#python3 scripts/simple-commit-count.py v0.log.ansi v1.log.ansi v2.log.ansi v3.log.ansi
+home_path="/home/${username}/"
+
+scp -i ${cert} ${replica1}:${home_path}client-times-0.txt  ${local_output_path}client-times-0.txt
+scp -i ${cert} ${replica2}:${home_path}client-times-1.txt  ${local_output_path}client-times-1.txt
+scp -i ${cert} ${replica3}:${home_path}client-times-2.txt  ${local_output_path}client-times-2.txt
+scp -i ${cert} ${replica4}:${home_path}client-times-3.txt  ${local_output_path}client-times-3.txt
+scp -i ${cert} ${replica5}:${home_path}client-times-4.txt  ${local_output_path}client-times-4.txt
+scp -i ${cert} ${replica6}:${home_path}client-times-5.txt  ${local_output_path}client-times-5.txt
+scp -i ${cert} ${replica7}:${home_path}client-times-6.txt  ${local_output_path}client-times-6.txt
+scp -i ${cert} ${replica8}:${home_path}client-times-7.txt  ${local_output_path}client-times-7.txt
+scp -i ${cert} ${replica9}:${home_path}client-times-8.txt  ${local_output_path}client-times-8.txt
+scp -i ${cert} ${replica10}:${home_path}client-times-9.txt ${local_output_path}client-times-9.txt
+
+
+python3 integration-test/python/overlay-test.py ${local_output_path}/1-consensus.txt ${local_output_path}/2-consensus.txt ${local_output_path}/3-consensus.txt ${local_output_path}/4-consensus.txt ${local_output_path}/5-consensus.txt
