@@ -71,4 +71,13 @@ scp -i ${cert} ${replica9}:${home_path}client-times-8.txt  ${local_output_path}c
 scp -i ${cert} ${replica10}:${home_path}client-times-9.txt ${local_output_path}client-times-9.txt
 
 
-python3 integration-test/python/overlay-test.py ${local_output_path}/1-consensus.txt ${local_output_path}/2-consensus.txt ${local_output_path}/3-consensus.txt ${local_output_path}/4-consensus.txt ${local_output_path}/5-consensus.txt
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-0.txt 1 0
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-1.txt 1 1
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-2.txt 1 2
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-3.txt 1 3
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-4.txt 1 4
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-5.txt 1 5
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-6.txt 1 6
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-7.txt 1 7
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-8.txt 1 8
+python3 experiments/python/client-stats.py logs/dedis-10/client-times-9.txt 1 9
