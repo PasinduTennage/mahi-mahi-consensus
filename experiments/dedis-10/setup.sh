@@ -21,7 +21,6 @@ do
     echo "copying files to replica ${index}"
     sshpass ssh "${replicas[${index}]}" -i ${cert} "${reset_directory};${kill_instances};${install_dependencies}"
     scp -i ${cert} logs/dedis-10/mysticeti "${replicas[${index}]}":${remote_home_path} # first download from replica 0
-
 done
 
 echo "setup complete"
