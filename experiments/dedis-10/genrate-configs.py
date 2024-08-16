@@ -18,6 +18,10 @@ parser.add_argument('--output_dir', type=str, default="logs/dedis-10/", help='co
 
 args = parser.parse_args()
 
+# Convert string arguments to boolean
+def str_to_bool(value):
+    return value.lower() == 'true'
+
 # File 1: node-parameters.yml
 node_parameters = {
     'leader_timeout': {
@@ -26,9 +30,9 @@ node_parameters = {
     },
     'wave_length': args.wave_length,
     'number_of_leaders': args.number_of_leaders,
-    'enable_pipelining': args.enable_pipelining,
-    'consensus_only': args.consensus_only,
-    'enable_synchronizer': args.enable_synchronizer
+    'enable_pipelining': str_to_bool(args.enable_pipelining),
+    'consensus_only': str_to_bool(args.consensus_only),
+    'enable_synchronizer': str_to_bool(args.enable_synchronizer)
 }
 
 # Write node-parameters.yml
