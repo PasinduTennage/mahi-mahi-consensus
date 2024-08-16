@@ -236,7 +236,7 @@ impl<H: BlockHandler> Core<H> {
             .utilization_timer("Core::try_new_block");
         let clock_round = self.threshold_clock.get_round();
         if clock_round <= self.last_proposed() {
-            tracing::warn!("Did not create block because the TLC round {} is <= last proposed round {}", clock_round, self.last_proposed());
+            // tracing::warn!("Did not create block because the TLC round {} is <= last proposed round {}", clock_round, self.last_proposed());
             return None;
         }
 
