@@ -59,6 +59,17 @@ done
 
 home_path="/home/${username}/"
 
+scp -i ${cert} ${replica1}:${home_path}client-times-0.txt  ${local_output_path}client-times-0.txt
+scp -i ${cert} ${replica2}:${home_path}client-times-1.txt  ${local_output_path}client-times-1.txt
+scp -i ${cert} ${replica3}:${home_path}client-times-2.txt  ${local_output_path}client-times-2.txt
+scp -i ${cert} ${replica4}:${home_path}client-times-3.txt  ${local_output_path}client-times-3.txt
+scp -i ${cert} ${replica5}:${home_path}client-times-4.txt  ${local_output_path}client-times-4.txt
+scp -i ${cert} ${replica6}:${home_path}client-times-5.txt  ${local_output_path}client-times-5.txt
+scp -i ${cert} ${replica7}:${home_path}client-times-6.txt  ${local_output_path}client-times-6.txt
+scp -i ${cert} ${replica8}:${home_path}client-times-7.txt  ${local_output_path}client-times-7.txt
+scp -i ${cert} ${replica9}:${home_path}client-times-8.txt  ${local_output_path}client-times-8.txt
+scp -i ${cert} ${replica10}:${home_path}client-times-9.txt ${local_output_path}client-times-9.txt
+
 
 python3 experiments/python/client-stats.py ${local_output_path}client-times-0.txt ${initial_delay_secs} 0
 python3 experiments/python/client-stats.py ${local_output_path}client-times-1.txt ${initial_delay_secs} 1
