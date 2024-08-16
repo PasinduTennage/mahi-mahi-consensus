@@ -1,8 +1,6 @@
 pwd=$(pwd)
 . "${pwd}"/experiments/dedis-10/ip.sh
 
-cargo build
-
 rm -r logs/dedis-10/ ; mkdir -p logs/dedis-10/
 
 remote_home_path="/home/${username}/a_mysticeti/"
