@@ -10,6 +10,10 @@ transaction_size=$8
 pwd=$(pwd)
 . "${pwd}"/experiments/ip.sh
 
+scp -i ${cert} scripts/node-parameters.yml   "${replicas[${index}]}":${remote_home_path}
+    scp -i ${cert} scripts/client-parameters.yml "${replicas[${index}]}":${remote_home_path}
+    sshpass ssh "${replicas[${index}]}" -i ${cert} "./a_mysticeti/mysticeti benchmark-genesis --ips ${replica1_name} ${replica2_name} ${replica3_name} ${replica4_name} ${replica5_name} ${replica6_name} ${replica7_name} ${replica8_name} ${replica9_name} ${replica10_name} --working-directory ${remote_home_path} --node-parameters-path ${remote_home_path}node-parameters.yml"
+
 rm nohup.out
 
 replica_path="/baxos/replica"
