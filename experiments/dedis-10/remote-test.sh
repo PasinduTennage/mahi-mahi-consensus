@@ -31,7 +31,7 @@ done
 sleep 5
 rm nohup.out
 
-local_output_path="logs/dedis-10/${wave_length}/${number_of_leaders}/pipelining-${enable_pipelining}/synchronizer-${enable_synchronizer}/${load}/"
+local_output_path="logs/dedis-10/${wave_length}/${number_of_leaders}/pipelining-${enable_pipelining}/synchronizer-${enable_synchronizer}/${load}/${transaction_size}/"
 
 rm -r "${local_output_path}"; mkdir -p "${local_output_path}"
 
