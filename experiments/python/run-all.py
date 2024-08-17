@@ -59,7 +59,7 @@ def extract_latencies_and_throughput(filename: str, expected_lines: int) -> list
 
         for line in lines:
             parts = line.strip().split(", ")
-            median_latency = parts[0].split(": ")[2].split(" ")[0]
+            median_latency = parts[0].split(": ")[3].split(" ")[0]
             average_latency = parts[1].split(": ")[1].split(" ")[0]
             percentile_latency = parts[2].split(": ")[1].split(" ")[0]
             throughput = parts[3].split(": ")[1].split(" ")[0]
@@ -88,7 +88,7 @@ with open(input_csv, mode='r') as file:
             command = (
                 f"/bin/bash {bash_file} {wave_length} {number_of_leaders} {enable_pipelining} "
                 f"{consensus_only} {enable_synchronizer} {initial_delay_secs} {initial_delay_nanos} "
-                f"{load} {transaction_size} {i}"
+                f"{load} {transaction_size} {0}"
             )
 
             exit_code = os.system(command)
@@ -99,7 +99,7 @@ with open(input_csv, mode='r') as file:
             else:
                 print(f"Command succeeded: {command}")
 
-            file_path = output_root + f"/{wave_length}/{number_of_leaders}/pipelining-{enable_pipelining}/synchronizer-{enable_synchronizer}/{load}/{transaction_size}/{0}.output.txt"
+            file_path = output_root + f"/{wave_length}/{number_of_leaders}/pipelining-{enable_pipelining}/synchronizer-{enable_synchronizer}/{load}/{transaction_size}/{0}/output.txt"
             if os.path.exists(file_path):
                 if check_file_format_and_lines(file_path, num_replicas):
                     stats = extract_latencies_and_throughput(file_path, num_replicas)
@@ -109,6 +109,7 @@ with open(input_csv, mode='r') as file:
                         new_entry.extend(stats)
                         lines.append(new_entry)
                         csvwriter.writerow(new_entry)
+                        csvfile.flush()
                         complete = True
                     else:
                         print(f"File {file_path} output passing failed.")
