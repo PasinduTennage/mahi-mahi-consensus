@@ -54,10 +54,9 @@ pub struct NodeParameters {
 }
 
 pub mod node_defaults {
-    use crate::consensus::MINIMUM_WAVE_LENGTH;
 
     pub fn default_wave_length() -> super::RoundNumber {
-        MINIMUM_WAVE_LENGTH
+        5
     }
 
     pub fn default_leader_timeout() -> std::time::Duration {

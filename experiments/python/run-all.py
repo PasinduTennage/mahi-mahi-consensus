@@ -22,7 +22,7 @@ with open(input_csv, mode='r') as file:
         load = row[4]
         transaction_size = row[5]
 
-        for i in range(3):
+        for i in range(1):
             command = (
                 f"/bin/bash {bash_file} {wave_length} {number_of_leaders} {enable_pipelining} "
                 f"{consensus_only} {enable_synchronizer} {initial_delay_secs} {initial_delay_nanos} "
