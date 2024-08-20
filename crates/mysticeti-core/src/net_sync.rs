@@ -107,6 +107,7 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
             shutdown_grace_period,
             block_fetcher,
             metrics.clone(),
+            public_config.parameters.leader_timeout,
         ));
         let syncer_task = AsyncWalSyncer::start(wal_syncer, stop_sender, epoch_sender);
         Self {
@@ -135,6 +136,7 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
         shutdown_grace_period: Duration,
         block_fetcher: Arc<BlockFetcher>,
         metrics: Arc<Metrics>,
+        leader_timeout: Duration,
     ) {
         let mut connections: HashMap<usize, JoinHandle<Option<()>>> = HashMap::new();
         let handle = Handle::current();
@@ -142,6 +144,7 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
             inner.clone(),
             epoch_close_signal,
             shutdown_grace_period,
+            leader_timeout,
         ));
         let cleanup_task = handle.spawn(Self::cleanup_task(inner.clone()));
         while let Some(connection) = inner.recv_or_stopped(network.connection_receiver()).await {
@@ -168,7 +171,7 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
                 .into_values()
                 .chain([leader_timeout_task, cleanup_task].into_iter()),
         )
-        .await;
+            .await;
         Arc::try_unwrap(block_fetcher)
             .unwrap_or_else(|_| panic!("Failed to drop all connections"))
             .shutdown()
@@ -249,8 +252,8 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
         inner: Arc<NetworkSyncerInner<H, C>>,
         mut epoch_close_signal: mpsc::Receiver<()>,
         shutdown_grace_period: Duration,
+        leader_timeout: Duration,
     ) -> Option<()> {
-        let leader_timeout = Duration::from_secs(1);
         loop {
             let notified = inner.notify.notified();
             let round = inner
