@@ -35,7 +35,7 @@ use crate::{
 
 #[derive(Serialize, Deserialize)]
 pub struct Committee {
-    authorities: Vec<Authority>,
+    pub authorities: Vec<Authority>,
     validity_threshold: Stake, // The minimum stake required for validity
     quorum_threshold: Stake,   // The minimum stake required for quorum
     skip_threshold: Stake, // The minimum stake required to skip a transaction
