@@ -18,7 +18,7 @@ with open(file_name, 'r') as file:
             if len(line.split(","))!=2:
                 continue
             start_time, end_time = map(int, line.split(","))
-            if start_time < (60 + init_delay_secs + 1) * 1000000:
+            if 60* 1000000 < start_time and start_time < (120) * 1000000:
                 latency = end_time - start_time
                 latencies.append(latency)
                 row_count += 1
