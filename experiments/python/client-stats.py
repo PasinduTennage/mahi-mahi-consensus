@@ -15,10 +15,10 @@ row_count = 0
 with open(file_name, 'r') as file:
     for line in file:
         if line.strip():
-            if len(line.split(","))!=2:
+            if len(line.split(",")) != 2:
                 continue
             start_time, end_time = map(int, line.split(","))
-            if 60* 1000000 < start_time and start_time < (120) * 1000000:
+            if 40000000 < start_time and start_time < 100000001:
                 latency = end_time - start_time
                 latencies.append(latency)
                 row_count += 1
@@ -31,6 +31,6 @@ if latencies:
           f"Median Latency: {median_latency} microseconds, "
           f"Average Latency: {average_latency} microseconds, "
           f"99th Percentile Latency: {percentile_99_latency} microseconds, "
-          f"Throughput: {float(row_count)/60.0} requests per second")
+          f"Throughput: {float(row_count) / 60.0} requests per second")
 else:
     print("No valid entries found with start time less than 60000000.")
