@@ -26,7 +26,7 @@ def str_to_bool(value):
 node_parameters = {
     'leader_timeout': {
         'secs': 0,
-        'nanos': 300000000
+        'nanos': 150000000
     },
     'wave_length': args.wave_length,
     'number_of_leaders': args.number_of_leaders,
