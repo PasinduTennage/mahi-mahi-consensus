@@ -10,7 +10,7 @@ transaction_size=$9
 iteration=${10}
 
 pwd=$(pwd)
-. "${pwd}"/experiments/dedis-10/ip.sh
+. "${pwd}"/experiments/aws/ip.sh
 
 python3 experiments/python/genrate-configs.py --wave_length "${wave_length}" --number_of_leaders "${number_of_leaders}" --enable_pipelining "${enable_pipelining}" --consensus_only "${consensus_only}" --enable_synchronizer "${enable_synchronizer}" --initial_delay_secs "${initial_delay_secs}" --initial_delay_nanos "${initial_delay_nanos}" --load "${load}" --transaction_size "${transaction_size}" --output_dir "logs/dedis-10/"
 
