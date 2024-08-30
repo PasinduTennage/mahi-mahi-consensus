@@ -51,9 +51,9 @@ nohup ssh "${replica10}"  -i ${cert}   ".${remote_replica_path} run --authority 
 
 sleep 10
 
-nohup ssh "${replica8}"    -i ${cert}   "${kill_instances}"  &
-nohup ssh "${replica9}"    -i ${cert}   "${kill_instances}"  &
-nohup ssh "${replica10}"   -i ${cert}   "${kill_instances}"  &
+ssh "${replica8}"    -i ${cert}   "${kill_instances}"
+ssh "${replica9}"    -i ${cert}   "${kill_instances}"
+ssh "${replica10}"   -i ${cert}   "${kill_instances}"
 
 
 sleep 120
