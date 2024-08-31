@@ -25,6 +25,8 @@ pub struct BaseCommitterOptions {
     /// The offset of the first wave. This is used by the pipelined committer to ensure that each
     /// [`BaseCommitter`] instances operates on a different view of the dag.
     pub round_offset: u64,
+    /// is this pipelined or not
+    pub pipelined: bool,
 }
 
 impl Default for BaseCommitterOptions {
@@ -33,6 +35,7 @@ impl Default for BaseCommitterOptions {
             wave_length: DEFAULT_WAVE_LENGTH,
             leader_offset: 0,
             round_offset: 0,
+            pipelined: true,
         }
     }
 }
@@ -319,8 +322,8 @@ impl BaseCommitter {
         // Check whether the leader has enough blame. That is, whether there are 2f+1 non-votes
         // for that leader (which ensure there will never be a certificate for that leader).
         // what if we have wavelength >2 ? then we should check all the voting rounds?
-        let last_voting_round = leader_round + self.options.wave_length-3;
-        if self.can_skip_leader(last_voting_round, leader, leader_round) {
+        let last_voting_round = leader_round + self.options.wave_length - 3;
+        if self.options.pipelined && self.can_skip_leader(last_voting_round, leader, leader_round) {
             return LeaderStatus::Skip(leader, leader_round);
         }
 

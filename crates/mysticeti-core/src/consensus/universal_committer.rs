@@ -39,8 +39,8 @@ impl UniversalCommitter {
         // Try to decide as many leaders as possible, starting with the highest round.
         let mut leaders = VecDeque::new();
         for round in (last_decided_round..=highest_known_round).rev() {
-            if round  + self.wave_length > threshold_round{
-                continue
+            if round + self.wave_length > threshold_round {
+                continue;
             }
             for committer in self.committers.iter().rev() {
                 // Skip committers that don't have a leader for this round.
@@ -186,6 +186,7 @@ impl UniversalCommitterBuilder {
                     wave_length: self.wave_length,
                     round_offset,
                     leader_offset: leader_offset as RoundNumber,
+                    pipelined: self.pipeline,
                 };
                 let committer =
                     BaseCommitter::new(self.committee.clone(), self.block_store.clone())
