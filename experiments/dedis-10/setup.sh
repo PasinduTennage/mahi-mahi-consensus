@@ -1,5 +1,11 @@
-pwd=$(pwd)
-. "${pwd}"/experiments/aws/ip.sh
+if [ -z "$1" ]; then
+    echo "Usage: $0 <path_to_ip.sh>"
+    exit 1
+fi
+
+ip_sh_path="$1"
+
+. "$ip_sh_path"
 
 rm -r logs/dedis-10/ ; mkdir -p logs/dedis-10/
 
