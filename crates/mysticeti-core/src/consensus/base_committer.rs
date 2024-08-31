@@ -234,6 +234,11 @@ impl BaseCommitter {
         if !has_quorum {
             return false;
         }
+
+        // if lenth of leader_blocks is 0, then return true
+        if leader_blocks.len() == 0 {
+            return true;
+        }
         // 2f+1 blames  -- skip        ;
         for leader_block in &leader_blocks {
             let mut skip_stake_aggregator = StakeAggregator::<QuorumThreshold>::new();
