@@ -1,6 +1,6 @@
 cert="/home/ubuntu/Pictures/pasindu"
 username=ubuntu
-replica1_name=18.118.93.224
+replica1_name=3.148.117.186
 replica1=${username}@${replica1_name}
 
 replica2_name=18.221.177.227
