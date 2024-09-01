@@ -1,4 +1,4 @@
-cert="/home/ubuntu/Pictures/pasindu"
+cert="/home/pasindu/Pictures/pasindu"
 username=ubuntu
 replica1_name=13.59.233.152
 replica1=${username}@${replica1_name}
