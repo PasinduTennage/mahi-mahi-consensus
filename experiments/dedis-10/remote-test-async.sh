@@ -12,7 +12,7 @@ iteration=${10}
 pwd=$(pwd)
 . "${pwd}"/experiments/aws/ip-async.sh
 
-python3 experiments/python/genrate-configs.py --wave_length "${wave_length}" --number_of_leaders "${number_of_leaders}" --enable_pipelining "${enable_pipelining}" --consensus_only "${consensus_only}" --enable_synchronizer "${enable_synchronizer}" --initial_delay_secs "${initial_delay_secs}" --initial_delay_nanos "${initial_delay_nanos}" --load "${load}" --transaction_size "${transaction_size}" --output_dir "logs/dedis-10/"
+python3 experiments/python/genrate-configs-async.py --wave_length "${wave_length}" --number_of_leaders "${number_of_leaders}" --enable_pipelining "${enable_pipelining}" --consensus_only "${consensus_only}" --enable_synchronizer "${enable_synchronizer}" --initial_delay_secs "${initial_delay_secs}" --initial_delay_nanos "${initial_delay_nanos}" --load "${load}" --transaction_size "${transaction_size}" --output_dir "logs/dedis-10/"
 
 remote_home_path="/home/${username}/a_mysticeti/"
 kill_instances="pkill -f mysticeti ; pkill -f mysticeti"
@@ -63,7 +63,7 @@ nohup ssh "${replica8}"    -i ${cert}   "python3 ${remote_home_path}async_networ
 nohup ssh "${replica9}"    -i ${cert}   "python3 ${remote_home_path}async_network.py --attack_level 10 --duration 120  --device  ens5" >${local_output_path}attack8.log &
 nohup ssh "${replica10}"   -i ${cert}   "python3 ${remote_home_path}async_network.py --attack_level 10 --duration 120  --device  ens5" >${local_output_path}attack9.log &
 
-sleep 125
+sleep 130
 
 for index in "${!replicas[@]}";
 do
