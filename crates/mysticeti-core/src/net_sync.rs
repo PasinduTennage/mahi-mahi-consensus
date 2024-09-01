@@ -31,7 +31,6 @@ use crate::{
     types::{format_authority_index, AuthorityIndex},
     wal::WalSyncer,
 };
-use crate::types::RoundNumber;
 
 /// The maximum number of blocks that can be requested in a single message.
 pub const MAXIMUM_BLOCK_REQUEST: usize = 10;
@@ -255,9 +254,7 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
         shutdown_grace_period: Duration,
         leader_timeout: Duration,
     ) -> Option<()> {
-        let mut last_timeout_round: RoundNumber = 0;
         loop {
-
             let notified = inner.notify.notified();
             let round = inner
                 .block_store
@@ -277,13 +274,11 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
             }
             select! {
                 _sleep = runtime::sleep(leader_timeout) => {
-                    if round > last_timeout_round {
-                        last_timeout_round = round;
                         tracing::debug!("Timeout {round}");
                         println!("Timeout {round}");
                         // todo - more then one round timeout can happen, need to fix this
                         inner.syncer.force_new_block(round).await;
-                    }
+
                 }
                 _notified = notified => {
                     // restart loop
