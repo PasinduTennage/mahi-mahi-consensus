@@ -19,6 +19,8 @@ nohup ./target/debug/mysticeti  dry-run --committee-size 4 --authority 3 > ${out
 
 sleep 130
 
+pkill -f mysticeti
+
 python3 scripts/block-create-test.py   ${output_dir}v0.log.ansi ${output_dir}v1.log.ansi ${output_dir}v2.log.ansi ${output_dir}v3.log.ansi
 python3 scripts/commit-test.py         ${output_dir}v0.log.ansi ${output_dir}v1.log.ansi ${output_dir}v2.log.ansi ${output_dir}v3.log.ansi
 python3 scripts/simple-commit-count.py ${output_dir}v0.log.ansi ${output_dir}v1.log.ansi ${output_dir}v2.log.ansi ${output_dir}v3.log.ansi
