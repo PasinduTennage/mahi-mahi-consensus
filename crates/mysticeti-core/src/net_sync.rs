@@ -255,8 +255,8 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
         shutdown_grace_period: Duration,
         leader_timeout: Duration,
     ) -> Option<()> {
+        let mut last_timeout_round: RoundNumber = 0;
         loop {
-            let mut last_timeout_round: RoundNumber = 0;
 
             let notified = inner.notify.notified();
             let round = inner
