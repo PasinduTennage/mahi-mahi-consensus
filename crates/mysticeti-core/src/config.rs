@@ -60,7 +60,7 @@ pub mod node_defaults {
     }
 
     pub fn default_leader_timeout() -> std::time::Duration {
-        std::time::Duration::from_millis(50)
+        std::time::Duration::from_millis(250)
     }
 
     pub fn default_max_block_size() -> usize {
@@ -88,7 +88,7 @@ pub mod node_defaults {
     }
 
     pub fn default_enable_synchronizer() -> bool {
-        false
+        true
     }
 }
 
@@ -274,7 +274,7 @@ mod client_defaults {
     use super::Duration;
 
     pub fn default_load() -> usize {
-        100
+        1000
     }
 
     pub fn default_transaction_size() -> usize {
