@@ -32,7 +32,7 @@ use crate::{
     types::{AuthorityIndex, BlockReference, RoundNumber, StatementBlock},
 };
 
-const PING_INTERVAL: Duration = Duration::from_secs(1000);
+const PING_INTERVAL: Duration = Duration::from_secs(30);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum NetworkMessage {
