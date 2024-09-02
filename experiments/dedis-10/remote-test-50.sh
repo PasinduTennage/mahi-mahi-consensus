@@ -150,12 +150,12 @@ sleep 10
 
 home_path="/home/${username}/"
 
-scp -i ${cert} ${replica1}:${home_path}client-times-0.txt    ${local_output_path}client-times-0.txt
-scp -i ${cert} ${replica2}:${home_path}client-times-1.txt    ${local_output_path}client-times-1.txt
-scp -i ${cert} ${replica3}:${home_path}client-times-2.txt    ${local_output_path}client-times-2.txt
-scp -i ${cert} ${replica4}:${home_path}client-times-3.txt    ${local_output_path}client-times-3.txt
+nohup scp -i ${cert} ${replica1}:${home_path}client-times-0.txt    ${local_output_path}client-times-0.txt &
+nohup scp -i ${cert} ${replica2}:${home_path}client-times-1.txt    ${local_output_path}client-times-1.txt &
+nohup scp -i ${cert} ${replica3}:${home_path}client-times-2.txt    ${local_output_path}client-times-2.txt &
+nohup scp -i ${cert} ${replica4}:${home_path}client-times-3.txt    ${local_output_path}client-times-3.txt &
 scp -i ${cert} ${replica5}:${home_path}client-times-4.txt    ${local_output_path}client-times-4.txt
-
+sleep 10
 
 output_file=${local_output_path}output.txt
 
