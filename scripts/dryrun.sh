@@ -3,7 +3,7 @@
 
 # bash run.sh
 output_dir=logs/local/
-mkdir -p ${output_dir}
+rm -r ${output_dir} && mkdir -p ${output_dir}
 
 pkill -f mysticeti
 
@@ -31,3 +31,13 @@ python3 experiments/python/client-stats.py client-times-0.txt 5 0 >> ${output_fi
 python3 experiments/python/client-stats.py client-times-1.txt 5 1 >> ${output_file}
 python3 experiments/python/client-stats.py client-times-2.txt 5 2 >> ${output_file}
 python3 experiments/python/client-stats.py client-times-3.txt 5 3 >> ${output_file}
+
+rm client-times-0.txt
+rm client-times-1.txt
+rm client-times-2.txt
+rm client-times-3.txt
+
+rm -r dryrun-validator-0
+rm -r dryrun-validator-1
+rm -r dryrun-validator-2
+rm -r dryrun-validator-3
