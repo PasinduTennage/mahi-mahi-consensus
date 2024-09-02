@@ -15,7 +15,7 @@ kill_instances="pkill -f mysticeti ; pkill -f mysticeti"
 install_dependencies="sudo apt-get update"
 
 # build the binary in a remote replica, uncomment when needed
-sshpass ssh "${replicas[0]}" -i ${cert} "rm -r async-mystecity; git clone https://github.com/PasinduTennage/async-mystecity; cd async-mystecity; git checkout consensus-rework; sudo apt-get install libfontconfig1-dev; source /home/${username}/.cargo/env; cargo build --release;"
+sshpass ssh -o StrictHostKeyChecking=no  "${replicas[0]}" -i ${cert} "rm -r async-mystecity; git clone https://github.com/PasinduTennage/async-mystecity; cd async-mystecity; git checkout consensus-rework; sudo apt-get install libfontconfig1-dev; source /home/${username}/.cargo/env; cargo build --release;"
 #sshpass ssh "${replicas[0]}" -i ${cert} "rm /home/${username}/async-mystecity/target/release/mysticeti; cd async-mystecity; git checkout consensus-rework; git pull origin consensus-rework;  source /home/${username}/.cargo/env; cargo build --release;"
 scp -i ${cert} "${replicas[0]}":/home/${username}/async-mystecity/target/release/mysticeti logs/dedis-10/mysticeti
 
@@ -23,7 +23,7 @@ scp -i ${cert} "${replicas[0]}":/home/${username}/async-mystecity/target/release
 for index in "${!replicas[@]}";
 do
     echo "copying files to replica ${index}"
-    sshpass ssh "${replicas[${index}]}" -i ${cert} "${reset_directory};${kill_instances};${install_dependencies}"
+    sshpass ssh -o StrictHostKeyChecking=no  "${replicas[${index}]}" -i ${cert} "${reset_directory};${kill_instances};${install_dependencies}"
     scp -i ${cert} logs/dedis-10/mysticeti "${replicas[${index}]}":${remote_home_path} # first download from replica 0
 done
 
