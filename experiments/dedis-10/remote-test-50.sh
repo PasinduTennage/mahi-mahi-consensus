@@ -22,11 +22,10 @@ remote_replica_path="/a_mysticeti/mysticeti"
 for index in "${!replicas[@]}";
 do
     echo "copying configs to replica ${index}"
-    scp -i ${cert} logs/dedis-10/node-parameters.yml   "${replicas[${index}]}":"${remote_home_path}"
-    scp -i ${cert} logs/dedis-10/client-parameters.yml "${replicas[${index}]}":"${remote_home_path}"
-    sshpass ssh "${replicas[${index}]}" -i ${cert} "${kill_instances}"
-    sshpass ssh "${replicas[${index}]}" -i ${cert} "rm ${remote_home_path}storage-${index}/wal"
-    sshpass ssh "${replicas[${index}]}" -i ${cert} ".${remote_replica_path} benchmark-genesis --ips ${replica1_name}  ${replica2_name} ${replica3_name} ${replica4_name} ${replica5_name} ${replica6_name} ${replica7_name} ${replica8_name} ${replica9_name} ${replica10_name} ${replica11_name}  ${replica12_name} ${replica13_name} ${replica14_name} ${replica15_name} ${replica16_name} ${replica17_name} ${replica18_name} ${replica19_name} ${replica20_name} ${replica21_name}  ${replica22_name} ${replica23_name} ${replica24_name} ${replica25_name} ${replica26_name} ${replica27_name} ${replica28_name} ${replica29_name} ${replica30_name} ${replica31_name}  ${replica32_name} ${replica33_name} ${replica34_name} ${replica35_name} ${replica36_name} ${replica37_name} ${replica38_name} ${replica39_name} ${replica40_name} ${replica41_name}  ${replica42_name} ${replica43_name} ${replica44_name} ${replica45_name} ${replica46_name} ${replica47_name} ${replica48_name} ${replica49_name} ${replica50_name} --working-directory ${remote_home_path} --node-parameters-path ${remote_home_path}node-parameters.yml"
+    scp -i ${cert} logs/dedis-10/node-parameters.yml   "${replicas[${index}]}":"${remote_home_path}" &
+    scp -i ${cert} logs/dedis-10/client-parameters.yml "${replicas[${index}]}":"${remote_home_path}" &
+    wait
+    sshpass ssh "${replicas[${index}]}" -i ${cert} "${kill_instances}; rm ${remote_home_path}storage-${index}/wal; .${remote_replica_path} benchmark-genesis --ips ${replica1_name}  ${replica2_name} ${replica3_name} ${replica4_name} ${replica5_name} ${replica6_name} ${replica7_name} ${replica8_name} ${replica9_name} ${replica10_name} ${replica11_name}  ${replica12_name} ${replica13_name} ${replica14_name} ${replica15_name} ${replica16_name} ${replica17_name} ${replica18_name} ${replica19_name} ${replica20_name} ${replica21_name}  ${replica22_name} ${replica23_name} ${replica24_name} ${replica25_name} ${replica26_name} ${replica27_name} ${replica28_name} ${replica29_name} ${replica30_name} ${replica31_name}  ${replica32_name} ${replica33_name} ${replica34_name} ${replica35_name} ${replica36_name} ${replica37_name} ${replica38_name} ${replica39_name} ${replica40_name} ${replica41_name}  ${replica42_name} ${replica43_name} ${replica44_name} ${replica45_name} ${replica46_name} ${replica47_name} ${replica48_name} ${replica49_name} ${replica50_name} --working-directory ${remote_home_path} --node-parameters-path ${remote_home_path}node-parameters.yml"
 done
 
 sleep 5
@@ -95,17 +94,18 @@ sleep 125
 for index in "${!replicas[@]}";
 do
     echo "killing instance"
-    sshpass ssh "${replicas[${index}]}" -i ${cert} "${kill_instances}"
+    sshpass ssh "${replicas[${index}]}" -i ${cert} "${kill_instances}" &
 done
+wait
 
 home_path="/home/${username}/"
 
-scp -i ${cert} ${replica1}:${home_path}client-times-0.txt    ${local_output_path}client-times-0.txt
-scp -i ${cert} ${replica2}:${home_path}client-times-1.txt    ${local_output_path}client-times-1.txt
-scp -i ${cert} ${replica3}:${home_path}client-times-2.txt    ${local_output_path}client-times-2.txt
-scp -i ${cert} ${replica4}:${home_path}client-times-3.txt    ${local_output_path}client-times-3.txt
-scp -i ${cert} ${replica5}:${home_path}client-times-4.txt    ${local_output_path}client-times-4.txt
-
+scp -i ${cert} ${replica1}:${home_path}client-times-0.txt    ${local_output_path}client-times-0.txt &
+scp -i ${cert} ${replica2}:${home_path}client-times-1.txt    ${local_output_path}client-times-1.txt &
+scp -i ${cert} ${replica3}:${home_path}client-times-2.txt    ${local_output_path}client-times-2.txt &
+scp -i ${cert} ${replica4}:${home_path}client-times-3.txt    ${local_output_path}client-times-3.txt &
+scp -i ${cert} ${replica5}:${home_path}client-times-4.txt    ${local_output_path}client-times-4.txt &
+wait
 
 output_file=${local_output_path}output.txt
 
