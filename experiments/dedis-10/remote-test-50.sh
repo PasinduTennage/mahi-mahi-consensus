@@ -105,51 +105,7 @@ scp -i ${cert} ${replica2}:${home_path}client-times-1.txt    ${local_output_path
 scp -i ${cert} ${replica3}:${home_path}client-times-2.txt    ${local_output_path}client-times-2.txt
 scp -i ${cert} ${replica4}:${home_path}client-times-3.txt    ${local_output_path}client-times-3.txt
 scp -i ${cert} ${replica5}:${home_path}client-times-4.txt    ${local_output_path}client-times-4.txt
-scp -i ${cert} ${replica6}:${home_path}client-times-5.txt    ${local_output_path}client-times-5.txt
-scp -i ${cert} ${replica7}:${home_path}client-times-6.txt    ${local_output_path}client-times-6.txt
-scp -i ${cert} ${replica8}:${home_path}client-times-7.txt    ${local_output_path}client-times-7.txt
-scp -i ${cert} ${replica9}:${home_path}client-times-8.txt    ${local_output_path}client-times-8.txt
-scp -i ${cert} ${replica10}:${home_path}client-times-9.txt   ${local_output_path}client-times-9.txt
-scp -i ${cert} ${replica11}:${home_path}client-times-10.txt  ${local_output_path}client-times-10.txt
-scp -i ${cert} ${replica12}:${home_path}client-times-11.txt  ${local_output_path}client-times-11.txt
-scp -i ${cert} ${replica13}:${home_path}client-times-12.txt  ${local_output_path}client-times-12.txt
-scp -i ${cert} ${replica14}:${home_path}client-times-13.txt  ${local_output_path}client-times-13.txt
-scp -i ${cert} ${replica15}:${home_path}client-times-14.txt  ${local_output_path}client-times-14.txt
-scp -i ${cert} ${replica16}:${home_path}client-times-15.txt  ${local_output_path}client-times-15.txt
-scp -i ${cert} ${replica17}:${home_path}client-times-16.txt  ${local_output_path}client-times-16.txt
-scp -i ${cert} ${replica18}:${home_path}client-times-17.txt  ${local_output_path}client-times-17.txt
-scp -i ${cert} ${replica19}:${home_path}client-times-18.txt  ${local_output_path}client-times-18.txt
-scp -i ${cert} ${replica20}:${home_path}client-times-19.txt  ${local_output_path}client-times-19.txt
-scp -i ${cert} ${replica21}:${home_path}client-times-20.txt  ${local_output_path}client-times-20.txt
-scp -i ${cert} ${replica22}:${home_path}client-times-21.txt  ${local_output_path}client-times-21.txt
-scp -i ${cert} ${replica23}:${home_path}client-times-22.txt  ${local_output_path}client-times-22.txt
-scp -i ${cert} ${replica24}:${home_path}client-times-23.txt  ${local_output_path}client-times-23.txt
-scp -i ${cert} ${replica25}:${home_path}client-times-24.txt  ${local_output_path}client-times-24.txt
-scp -i ${cert} ${replica26}:${home_path}client-times-25.txt  ${local_output_path}client-times-25.txt
-scp -i ${cert} ${replica27}:${home_path}client-times-26.txt  ${local_output_path}client-times-26.txt
-scp -i ${cert} ${replica28}:${home_path}client-times-27.txt  ${local_output_path}client-times-27.txt
-scp -i ${cert} ${replica29}:${home_path}client-times-28.txt  ${local_output_path}client-times-28.txt
-scp -i ${cert} ${replica30}:${home_path}client-times-29.txt  ${local_output_path}client-times-29.txt
-scp -i ${cert} ${replica31}:${home_path}client-times-30.txt  ${local_output_path}client-times-30.txt
-scp -i ${cert} ${replica32}:${home_path}client-times-31.txt  ${local_output_path}client-times-31.txt
-scp -i ${cert} ${replica33}:${home_path}client-times-32.txt  ${local_output_path}client-times-32.txt
-scp -i ${cert} ${replica34}:${home_path}client-times-33.txt  ${local_output_path}client-times-33.txt
-scp -i ${cert} ${replica35}:${home_path}client-times-34.txt  ${local_output_path}client-times-34.txt
-scp -i ${cert} ${replica36}:${home_path}client-times-35.txt  ${local_output_path}client-times-35.txt
-scp -i ${cert} ${replica37}:${home_path}client-times-36.txt  ${local_output_path}client-times-36.txt
-scp -i ${cert} ${replica38}:${home_path}client-times-37.txt  ${local_output_path}client-times-37.txt
-scp -i ${cert} ${replica39}:${home_path}client-times-38.txt  ${local_output_path}client-times-38.txt
-scp -i ${cert} ${replica40}:${home_path}client-times-39.txt  ${local_output_path}client-times-39.txt
-scp -i ${cert} ${replica41}:${home_path}client-times-40.txt  ${local_output_path}client-times-40.txt
-scp -i ${cert} ${replica42}:${home_path}client-times-41.txt  ${local_output_path}client-times-41.txt
-scp -i ${cert} ${replica43}:${home_path}client-times-42.txt  ${local_output_path}client-times-42.txt
-scp -i ${cert} ${replica44}:${home_path}client-times-43.txt  ${local_output_path}client-times-43.txt
-scp -i ${cert} ${replica45}:${home_path}client-times-44.txt  ${local_output_path}client-times-44.txt
-scp -i ${cert} ${replica46}:${home_path}client-times-45.txt  ${local_output_path}client-times-45.txt
-scp -i ${cert} ${replica47}:${home_path}client-times-46.txt  ${local_output_path}client-times-46.txt
-scp -i ${cert} ${replica48}:${home_path}client-times-47.txt  ${local_output_path}client-times-47.txt
-scp -i ${cert} ${replica49}:${home_path}client-times-48.txt  ${local_output_path}client-times-48.txt
-scp -i ${cert} ${replica50}:${home_path}client-times-49.txt  ${local_output_path}client-times-49.txt
+
 
 output_file=${local_output_path}output.txt
 
@@ -158,48 +114,3 @@ python3 experiments/python/client-stats.py ${local_output_path}client-times-1.tx
 python3 experiments/python/client-stats.py ${local_output_path}client-times-2.txt ${initial_delay_secs}  2 >> ${output_file}
 python3 experiments/python/client-stats.py ${local_output_path}client-times-3.txt ${initial_delay_secs}  3 >> ${output_file}
 python3 experiments/python/client-stats.py ${local_output_path}client-times-4.txt ${initial_delay_secs}  4 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-5.txt ${initial_delay_secs}  5 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-6.txt ${initial_delay_secs}  6 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-7.txt ${initial_delay_secs}  7 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-8.txt ${initial_delay_secs}  8 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-9.txt ${initial_delay_secs}  9 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-10.txt ${initial_delay_secs} 10 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-11.txt ${initial_delay_secs} 11 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-12.txt ${initial_delay_secs} 12 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-13.txt ${initial_delay_secs} 13 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-14.txt ${initial_delay_secs} 14 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-15.txt ${initial_delay_secs} 15 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-16.txt ${initial_delay_secs} 16 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-17.txt ${initial_delay_secs} 17 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-18.txt ${initial_delay_secs} 18 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-19.txt ${initial_delay_secs} 19 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-20.txt ${initial_delay_secs} 20 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-21.txt ${initial_delay_secs} 21 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-22.txt ${initial_delay_secs} 22 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-23.txt ${initial_delay_secs} 23 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-24.txt ${initial_delay_secs} 24 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-25.txt ${initial_delay_secs} 25 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-26.txt ${initial_delay_secs} 26 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-27.txt ${initial_delay_secs} 27 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-28.txt ${initial_delay_secs} 28 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-29.txt ${initial_delay_secs} 29 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-30.txt ${initial_delay_secs} 30 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-31.txt ${initial_delay_secs} 31 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-32.txt ${initial_delay_secs} 32 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-33.txt ${initial_delay_secs} 33 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-34.txt ${initial_delay_secs} 34 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-35.txt ${initial_delay_secs} 35 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-36.txt ${initial_delay_secs} 36 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-37.txt ${initial_delay_secs} 37 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-38.txt ${initial_delay_secs} 38 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-39.txt ${initial_delay_secs} 39 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-40.txt ${initial_delay_secs} 40 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-41.txt ${initial_delay_secs} 41 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-42.txt ${initial_delay_secs} 42 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-43.txt ${initial_delay_secs} 43 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-44.txt ${initial_delay_secs} 44 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-45.txt ${initial_delay_secs} 45 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-46.txt ${initial_delay_secs} 46 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-47.txt ${initial_delay_secs} 47 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-48.txt ${initial_delay_secs} 48 >> ${output_file}
-python3 experiments/python/client-stats.py ${local_output_path}client-times-49.txt ${initial_delay_secs} 49 >> ${output_file}
