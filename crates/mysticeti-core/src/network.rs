@@ -118,10 +118,6 @@ impl Network {
                 .run(receiver),
             );
         }
-        println!("Worker senders:");
-        for (key, value) in &worker_senders {
-            println!("Key: {:?}, Value: {:?}", key, value);
-        }
 
         handle.spawn(
             Server {
