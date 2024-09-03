@@ -441,7 +441,7 @@ plt.plot(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, 'r--', label='
 plt.errorbar(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, yerr=mm_w5_l2_10_crash_std, fmt='o', ecolor='r', capsize=5,mfc='r',  mec='r')
 
 
-plt.xlabel('Throughput (req/s)')
+plt.xlabel('Throughput x1k (req/s)')
 plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
