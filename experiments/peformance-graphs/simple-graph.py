@@ -50,15 +50,7 @@ mm_w4_l1_10_crash_throughput = []
 mm_w4_l1_10_crash_latency = []
 mm_w4_l1_10_crash_std = []
 
-mm_w6_l1_10_best_throughput = []
-mm_w6_l1_10_best_latency = []
-mm_w6_l1_10_best_std = []
-
-mm_w6_l1_10_crash_throughput = []
-mm_w6_l1_10_crash_latency = []
-mm_w6_l1_10_crash_std = []
-
-# checked names above sept 3 - 17,24
+# checked names above sept 3 - 18,21
 
 
 import matplotlib.pyplot as plt
@@ -69,10 +61,6 @@ import matplotlib.pyplot as plt
 
 # -   50 nodes
 # --  10 nodes
-
-# -   l1, w5
-# :   l2  w4
-# -.  l3  w6
 
 # figure 1 - best case
 plt.figure(figsize=(10, 4))
