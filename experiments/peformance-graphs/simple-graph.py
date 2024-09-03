@@ -442,7 +442,7 @@ plt.errorbar(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, yerr=mm_w5
 
 
 plt.xlabel('Throughput (req/s)')
-plt.ylabel('Average Latency (ms)')
+plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
 plt.savefig('experiments/peformance-graphs/leaders.png', bbox_inches='tight', pad_inches=0)
