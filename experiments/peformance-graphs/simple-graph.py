@@ -425,7 +425,7 @@ ax.xaxis.set_major_formatter(FuncFormatter(thousands))
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
 ax.set_xlim([0, 160000])
-ax.set_ylim([800, 3500])
+ax.set_ylim([800, 1900])
 
 
 plt.plot(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, 'g-', label='Mahi-Mahi-l1')
