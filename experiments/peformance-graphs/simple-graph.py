@@ -355,7 +355,7 @@ def thousands(x, pos):
 plt.figure(figsize=(12, 3))
 plt.rcParams.update({'font.size': 14.30})
 ax = plt.gca()
-ax.xaxis.set_major_formatter(FuncFormatter(thousands))
+# ax.xaxis.set_major_formatter(FuncFormatter(thousands))
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
 ax.set_xlim([0, 370000])
@@ -380,7 +380,7 @@ plt.plot(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, 'go--', label='M
 plt.errorbar(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, yerr=mm_w5_l1_10_best_std, fmt='o', ecolor='g', capsize=5,mfc='g',  mec='g' )
 
 
-plt.xlabel('Throughput x 1k (req/s) ')
+plt.xlabel('Throughput (req/s) ')
 plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol=3, frameon=False)
@@ -393,7 +393,7 @@ plt.close()
 plt.figure(figsize=(5, 4))
 plt.rcParams.update({'font.size': 14.30})
 ax = plt.gca()
-ax.xaxis.set_major_formatter(FuncFormatter(thousands))
+# ax.xaxis.set_major_formatter(FuncFormatter(thousands))
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
 ax.set_xlim([0, 50000])
@@ -410,7 +410,7 @@ plt.plot(mm_w5_l1_10_crash_throughput, mm_w5_l1_10_crash_latency, 'g-', label='M
 plt.errorbar(mm_w5_l1_10_crash_throughput, mm_w5_l1_10_crash_latency, yerr=mm_w5_l1_10_crash_std, fmt='o', ecolor='g', capsize=5,mfc='g',  mec='g')
 
 
-plt.xlabel('Throughput x1k (req/s)')
+plt.xlabel('Throughput (req/s)')
 plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
@@ -421,11 +421,13 @@ plt.close()
 plt.figure(figsize=(6, 4))
 plt.rcParams.update({'font.size': 14.30})
 ax = plt.gca()
-ax.xaxis.set_major_formatter(FuncFormatter(thousands))
+# ax.xaxis.set_major_formatter(FuncFormatter(thousands))
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
 ax.set_xlim([0, 160000])
-ax.set_ylim([800, 1900])
+ax.set_ylim([1000, 1900])
+ax.set_xticks([25000, 50000, 100000, 150000])
+
 
 
 plt.plot(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, 'g-', label='Mahi-Mahi-l1')
@@ -441,7 +443,7 @@ plt.plot(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, 'r--', label='
 plt.errorbar(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, yerr=mm_w5_l2_10_crash_std, fmt='o', ecolor='r', capsize=5,mfc='r',  mec='r')
 
 
-plt.xlabel('Throughput x1k (req/s)')
+plt.xlabel('Throughput (req/s)')
 plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
@@ -452,7 +454,7 @@ plt.close()
 plt.figure(figsize=(5, 4))
 plt.rcParams.update({'font.size': 14.30})
 ax = plt.gca()
-ax.xaxis.set_major_formatter(FuncFormatter(thousands))
+# ax.xaxis.set_major_formatter(FuncFormatter(thousands))
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
 # ax.set_xlim([0, 1500])
