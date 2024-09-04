@@ -359,22 +359,22 @@ ax.xaxis.set_major_formatter(FuncFormatter(thousands))
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
 ax.set_xlim([0, 370000])
-ax.set_ylim([900, 7000])
+ax.set_ylim([900, 4500])
 
 plt.plot(narwhal_50_best_throughput, narwhal_50_best_latency, 'ko-', label='Narwhal-Tusk-50')
 plt.errorbar(narwhal_50_best_throughput, narwhal_50_best_latency, yerr=narwhal_50_best_std, fmt='o', ecolor='k', capsize=5,mfc='k',  mec='k' )
 
-plt.plot(cm_50_best_throughput, cm_50_best_latency, 'ro-', label='Cordial Miners-50')
-plt.errorbar(cm_50_best_throughput, cm_50_best_latency, yerr=cm_50_best_std, fmt='o', ecolor='r', capsize=5,mfc='r',  mec='r' )
-
-plt.plot(mm_50_best_throughput, mm_50_best_latency, 'go-', label='Mahi-Mahi-50')
-plt.errorbar(mm_50_best_throughput, mm_50_best_latency, yerr=mm_50_best_std, fmt='o', ecolor='g', capsize=5,mfc='g', mec='g')
-
 plt.plot(narwhal_10_best_throughput, narwhal_10_best_latency, 'ko--', label='Narwhal-Tusk-10')
 plt.errorbar(narwhal_10_best_throughput, narwhal_10_best_latency, yerr=narwhal_10_best_std, fmt='o', ecolor='k', capsize=5,mfc='k',  mec='k' )
 
+plt.plot(cm_50_best_throughput, cm_50_best_latency, 'ro-', label='Cordial Miners-50')
+plt.errorbar(cm_50_best_throughput, cm_50_best_latency, yerr=cm_50_best_std, fmt='o', ecolor='r', capsize=5,mfc='r',  mec='r' )
+
 plt.plot(cm_10_best_throughput, cm_10_best_latency, 'ro--', label='Cordial Miners-10')
 plt.errorbar(cm_10_best_throughput, cm_10_best_latency, yerr=cm_10_best_std, fmt='o', ecolor='r', capsize=5,mfc='r',  mec='r' )
+
+plt.plot(mm_50_best_throughput, mm_50_best_latency, 'go-', label='Mahi-Mahi-50')
+plt.errorbar(mm_50_best_throughput, mm_50_best_latency, yerr=mm_50_best_std, fmt='o', ecolor='g', capsize=5,mfc='g', mec='g')
 
 plt.plot(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, 'go--', label='Mahi-Mahi-10')
 plt.errorbar(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, yerr=mm_w5_l1_10_best_std, fmt='o', ecolor='g', capsize=5,mfc='g',  mec='g' )
@@ -383,7 +383,7 @@ plt.errorbar(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, yerr=mm_w5_l
 plt.xlabel('Throughput x 1k (req/s) ')
 plt.ylabel('Average Latency (s)')
 plt.grid()
-plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), frameon=False)
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol=3, frameon=False)
 plt.savefig('experiments/peformance-graphs/best-case.png', bbox_inches='tight', pad_inches=0)
 plt.close()
 
