@@ -384,7 +384,7 @@ plt.xlabel('Throughput (req/s) ')
 plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.3), ncol=3, frameon=False)
-plt.savefig('experiments/peformance-graphs/best-case.png', bbox_inches='tight', pad_inches=0)
+plt.savefig('experiments/peformance-graphs/best-case.pdf', bbox_inches='tight', pad_inches=0)
 plt.close()
 
 ##################################################################################################
@@ -414,7 +414,7 @@ plt.xlabel('Throughput (req/s)')
 plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
-plt.savefig('experiments/peformance-graphs/crash.png', bbox_inches='tight', pad_inches=0)
+plt.savefig('experiments/peformance-graphs/crash.pdf', bbox_inches='tight', pad_inches=0)
 plt.close()
 ###################################################################################################
 # figure 3 - leaders
@@ -447,7 +447,7 @@ plt.xlabel('Throughput (req/s)')
 plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
-plt.savefig('experiments/peformance-graphs/leaders.png', bbox_inches='tight', pad_inches=0)
+plt.savefig('experiments/peformance-graphs/leaders.pdf', bbox_inches='tight', pad_inches=0)
 plt.close()
 ##########################################################
 # figure 4 - wave length
@@ -475,8 +475,8 @@ plt.errorbar(mm_w4_l1_10_crash_throughput, mm_w4_l1_10_crash_latency, yerr=mm_w4
 
 
 plt.xlabel('Throughput (req/s)')
-plt.ylabel('Average Latency (ms)')
+plt.ylabel('Average Latency (s)')
 plt.grid()
 plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=2, frameon=False)
-plt.savefig('experiments/peformance-graphs/waves.png', bbox_inches='tight', pad_inches=0)
+plt.savefig('experiments/peformance-graphs/waves.pdf', bbox_inches='tight', pad_inches=0)
 plt.close()
