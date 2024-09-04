@@ -396,8 +396,8 @@ ax = plt.gca()
 ax.xaxis.set_major_formatter(FuncFormatter(thousands))
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
-# ax.set_xlim([0, 1500])
-ax.set_ylim([0, 15000])
+ax.set_xlim([0, 50000])
+ax.set_ylim([0, 10000])
 
 
 plt.plot(narwhal_10_crash_throughput, narwhal_10_crash_latency, 'k-', label='Narwhal-Tusk-10')
