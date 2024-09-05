@@ -433,14 +433,14 @@ ax.set_xticks([25000, 50000, 100000, 150000])
 plt.plot(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, 'g-', label='Mahi-Mahi-l1')
 plt.errorbar(mm_w5_l1_10_best_throughput, mm_w5_l1_10_best_latency, yerr=mm_w5_l1_10_best_std, fmt='o', ecolor='g', capsize=5,mfc='g',  mec='g')
 
-plt.plot(mm_w5_l2_10_best_throughput, mm_w5_l2_10_best_latency, 'r-', label='Mahi-Mahi-l2')
-plt.errorbar(mm_w5_l2_10_best_throughput, mm_w5_l2_10_best_latency, yerr=mm_w5_l2_10_best_std, fmt='o', ecolor='r', capsize=5,mfc='r',  mec='r')
-
 plt.plot(mm_w5_l1_10_crash_throughput, mm_w5_l1_10_crash_latency, 'g--', label='Mahi-Mahi-l1-crash')
 plt.errorbar(mm_w5_l1_10_crash_throughput, mm_w5_l1_10_crash_latency, yerr=mm_w5_l1_10_crash_std, fmt='o', ecolor='g', capsize=5,mfc='g',  mec='g')
 
-plt.plot(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, 'r--', label='Mahi-Mahi-l2-crash')
-plt.errorbar(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, yerr=mm_w5_l2_10_crash_std, fmt='o', ecolor='r', capsize=5,mfc='r',  mec='r')
+plt.plot(mm_w5_l2_10_best_throughput, mm_w5_l2_10_best_latency, 'b-', label='Mahi-Mahi-l2')
+plt.errorbar(mm_w5_l2_10_best_throughput, mm_w5_l2_10_best_latency, yerr=mm_w5_l2_10_best_std, fmt='o', ecolor='b', capsize=5,mfc='b',  mec='b')
+
+plt.plot(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, 'b--', label='Mahi-Mahi-l2-crash')
+plt.errorbar(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, yerr=mm_w5_l2_10_crash_std, fmt='o', ecolor='b', capsize=5,mfc='b',  mec='b')
 
 
 plt.xlabel('Throughput (req/s)')
