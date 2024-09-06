@@ -484,6 +484,11 @@ plt.errorbar(mm_w5_l2_10_best_throughput, mm_w5_l2_10_best_latency, yerr=mm_w5_l
 plt.plot(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, 'b--', label='Mahi-Mahi-l2-crash')
 plt.errorbar(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, yerr=mm_w5_l2_10_crash_std, fmt='o', ecolor='b', capsize=5,mfc='b',  mec='b')
 
+plt.plot(mm_w5_l3_10_best_throughput, mm_w5_l3_10_best_latency, 'm-', label='Mahi-Mahi-l3')
+plt.errorbar(mm_w5_l3_10_best_throughput, mm_w5_l3_10_best_latency, yerr=mm_w5_l3_10_best_std, fmt='m', ecolor='m', capsize=5,mfc='m',  mec='m')
+
+plt.plot(mm_w5_l3_10_crash_throughput, mm_w5_l3_10_crash_latency, 'm--', label='Mahi-Mahi-l3-crash')
+plt.errorbar(mm_w5_l3_10_crash_throughput, mm_w5_l3_10_crash_latency, yerr=mm_w5_l3_10_crash_std, fmt='m', ecolor='m', capsize=5,mfc='m',  mec='m')
 
 plt.xlabel('Throughput (req/s)')
 plt.ylabel('Average Latency (s)')
