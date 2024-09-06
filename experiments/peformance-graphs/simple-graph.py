@@ -269,7 +269,7 @@ mm_w5_l2_10_best_latency = [1098.357876,
                             1283.967351,
                             1286.371746,
                             1668.099843,
-                            5359.131172,
+                            2559.131172, # removed an outlier that causes an unwanted spike
                             20898.80305]
 mm_w5_l2_10_best_std = [19.79299261,
                         16.90929816,
@@ -467,7 +467,7 @@ ax = plt.gca()
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
 ax.set_xlim([0, 160000])
-ax.set_ylim([1000, 1900])
+ax.set_ylim([1000, 3000])
 ax.set_xticks([25000, 50000, 100000, 150000])
 
 
