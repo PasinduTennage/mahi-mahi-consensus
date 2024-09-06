@@ -466,9 +466,9 @@ ax = plt.gca()
 # ax.xaxis.set_major_formatter(FuncFormatter(thousands))
 ax.yaxis.set_major_formatter(FuncFormatter(thousands))
 
-ax.set_xlim([0, 160000])
-ax.set_ylim([1000, 3000])
-ax.set_xticks([25000, 50000, 100000, 150000])
+ax.set_xlim([0, 120000])
+ax.set_ylim([1000, 1400])
+ax.set_xticks([25000, 50000, 80000, 120000])
 
 
 
@@ -485,10 +485,10 @@ plt.plot(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, 'b--', label='
 plt.errorbar(mm_w5_l2_10_crash_throughput, mm_w5_l2_10_crash_latency, yerr=mm_w5_l2_10_crash_std, fmt='o', ecolor='b', capsize=5,mfc='b',  mec='b')
 
 plt.plot(mm_w5_l3_10_best_throughput, mm_w5_l3_10_best_latency, 'm-', label='Mahi-Mahi-l3')
-plt.errorbar(mm_w5_l3_10_best_throughput, mm_w5_l3_10_best_latency, yerr=mm_w5_l3_10_best_std, fmt='m', ecolor='m', capsize=5,mfc='m',  mec='m')
+plt.errorbar(mm_w5_l3_10_best_throughput, mm_w5_l3_10_best_latency, yerr=mm_w5_l3_10_best_std, fmt='o', ecolor='m', capsize=5,mfc='m',  mec='m')
 
 plt.plot(mm_w5_l3_10_crash_throughput, mm_w5_l3_10_crash_latency, 'm--', label='Mahi-Mahi-l3-crash')
-plt.errorbar(mm_w5_l3_10_crash_throughput, mm_w5_l3_10_crash_latency, yerr=mm_w5_l3_10_crash_std, fmt='m', ecolor='m', capsize=5,mfc='m',  mec='m')
+plt.errorbar(mm_w5_l3_10_crash_throughput, mm_w5_l3_10_crash_latency, yerr=mm_w5_l3_10_crash_std, fmt='o', ecolor='m', capsize=5,mfc='m',  mec='m')
 
 plt.xlabel('Throughput (req/s)')
 plt.ylabel('Average Latency (s)')
