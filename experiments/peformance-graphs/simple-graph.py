@@ -442,13 +442,13 @@ ax.set_xlim([0, 50000])
 ax.set_ylim([0, 10000])
 
 
-plt.plot(narwhal_10_crash_throughput, narwhal_10_crash_latency, 'k-', label='Narwhal-Tusk-10-crash')
+plt.plot(narwhal_10_crash_throughput, narwhal_10_crash_latency, 'k--', label='Narwhal-Tusk-10-crash')
 plt.errorbar(narwhal_10_crash_throughput, narwhal_10_crash_latency, yerr=narwhal_10_crash_std, fmt='o', ecolor='k', capsize=5,mfc='k',  mec='k')
 
-plt.plot(cm_10_crash_throughput, cm_10_crash_latency, 'r-', label='Cordial Miners-10-crash')
+plt.plot(cm_10_crash_throughput, cm_10_crash_latency, 'r--', label='Cordial Miners-10-crash')
 plt.errorbar(cm_10_crash_throughput, cm_10_crash_latency, yerr=cm_10_crash_std, fmt='o', ecolor='r', capsize=5,mfc='r',  mec='r')
 
-plt.plot(mm_w5_l1_10_crash_throughput, mm_w5_l1_10_crash_latency, 'g-', label='Mahi-Mahi-10-crash')
+plt.plot(mm_w5_l1_10_crash_throughput, mm_w5_l1_10_crash_latency, 'g--', label='Mahi-Mahi-10-crash')
 plt.errorbar(mm_w5_l1_10_crash_throughput, mm_w5_l1_10_crash_latency, yerr=mm_w5_l1_10_crash_std, fmt='o', ecolor='g', capsize=5,mfc='g',  mec='g')
 
 
