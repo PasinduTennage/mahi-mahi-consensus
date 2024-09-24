@@ -82,7 +82,7 @@ impl BaseCommitter {
     /// round of the wave.
     fn decision_round(&self, wave: WaveNumber) -> RoundNumber {
         let wave_length = self.options.wave_length;
-        wave * wave_length + wave_length - 2 + self.options.round_offset // works for any wave length
+        wave * wave_length + wave_length - 1 + self.options.round_offset // works for any wave length
     }
 
     /// The leader-elect protocol is offset by `leader_offset` to ensure that different committers
@@ -327,7 +327,7 @@ impl BaseCommitter {
         // Check whether the leader has enough blame. That is, whether there are 2f+1 non-votes
         // for that leader (which ensure there will never be a certificate for that leader).
         // what if we have wavelength >2 ? then we should check all the voting rounds?
-        let last_voting_round = leader_round + self.options.wave_length - 3;
+        let last_voting_round = leader_round + self.options.wave_length - 2;
         if self.options.pipelined && self.can_skip_leader(last_voting_round, leader, leader_round) {
             return LeaderStatus::Skip(leader, leader_round);
         }
