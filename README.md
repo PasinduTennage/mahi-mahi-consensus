@@ -20,5 +20,4 @@ Instructions for setting up and running the experiments can be found in the **ex
 Follow the steps outlined there to evaluate Mahi-Mahi's performance in your environment.
 
 ## License
-
 This software is licensed as [Apache 2.0](LICENSE).
