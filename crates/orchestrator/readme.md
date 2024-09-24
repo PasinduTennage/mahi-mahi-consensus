@@ -54,8 +54,8 @@ Create a file called `settings.json` that contains all the configuration paramet
   ],
   "specs": "m5d.8xlarge",
   "repository": {
-    "url": "http://github.com/mystenlabs/project-mysticeti.git",
-    "commit": "orchestrator"
+    "url": "https://github.com/PasinduTennage/mahi-mahi-consensus/",
+    "commit": "consensus-rework"
   },
   "results_directory": "./results",
   "logs_directory": "./logs"
@@ -86,17 +86,3 @@ cargo run --bin orchestrator testbed status
 ```
 
 Instances listed with a green number are available and ready for use, while instances listed with a red number are stopped.
-
-## Step 4. Running benchmarks
-
-Running benchmarks involves installing the specified version of the codebase on the remote machines and running one validator and one load generator per instance. For example, the following command benchmarks a committee of 10 validators under a constant load of 200 tx/s for 3 minutes:
-
-```bash
-cargo run --bin orchestrator -- benchmark --committee 10 fixed-load --loads 200 --duration 180
-```
-
-In a network of 10 validators, each with a corresponding load generator, each load generator submits a fixed load of 20 tx/s. Performance measurements are collected by regularly scraping the Prometheus metrics exposed by the load generators. The `orchestrator` binary provides additional commands to run a specific number of load generators on separate machines.
-
-## Step 5. Monitoring
-
-The orchestrator provides facilities to monitor metrics on clients and nodes. When run with the flab `--monitor`, the orchestrator deploys a [Prometheus](https://prometheus.io) instance and a [Grafana](https://grafana.com) instance on a dedicated remote machine. Grafana is then available on the address printed on stdout (e.g., `http://3.83.97.12:3000`) with the default username and password both set to `admin`. You can either create a [new dashboard](https://grafana.com/docs/grafana/latest/getting-started/build-first-dashboard/) or [import](https://grafana.com/docs/grafana/latest/dashboards/manage-dashboards/#import-a-dashboard) the example dashboard located in the `./assets` folder.
