@@ -65,36 +65,6 @@ pub enum Operation {
         #[clap(subcommand)]
         action: TestbedAction,
     },
-    /// Deploy nodes and run a benchmark on the specified testbed.
-    Benchmark {
-        /// The committee size to deploy.
-        #[clap(long, value_name = "INT", default_value_t = 4, global = true)]
-        committee: usize,
-
-        /// The set of loads to submit to the system (tx/s). Each load triggers a separate
-        /// benchmark run. Setting a load to zero will not deploy any benchmark clients
-        /// (useful to boot testbeds designed to run with external clients and load generators).
-        #[clap(long, value_name = "[INT]", default_value = "200", global = true)]
-        loads: Vec<usize>,
-
-        /// Whether to skip testbed updates before running benchmarks. This is a dangerous
-        /// operation as it may lead to running benchmarks on outdated nodes. It is however
-        /// useful when debugging in some specific scenarios.
-        #[clap(long, action, default_value_t = false, global = true)]
-        skip_testbed_update: bool,
-
-        /// Whether to skip testbed configuration before running benchmarks. This is a dangerous
-        /// operation as it may lead to running benchmarks on misconfigured nodes. It is however
-        /// useful when debugging in some specific scenarios.
-        #[clap(long, action, default_value_t = false, global = true)]
-        skip_testbed_configuration: bool,
-    },
-    /// Print a summary of the specified measurements collection.
-    Summarize {
-        /// The path to the settings file.
-        #[clap(long, value_name = "FILE")]
-        path: PathBuf,
-    },
 }
 
 /// The action to perform on the testbed.
@@ -196,66 +166,6 @@ async fn run<C: ServerProviderClient>(
                 .await
                 .wrap_err("Failed to destroy testbed")?,
         },
-
-        // Run benchmarks.
-        Operation::Benchmark {
-            committee,
-            loads,
-            skip_testbed_update,
-            skip_testbed_configuration,
-        } => {
-            // Create a new orchestrator to instruct the testbed.
-            let username = testbed.username();
-            let private_key_file = settings.ssh_private_key_file.clone();
-            let ssh_manager = SshConnectionManager::new(username.into(), private_key_file)
-                .with_timeout(settings.ssh_timeout)
-                .with_retries(settings.ssh_retries);
-
-            let instances = testbed.instances();
-
-            let setup_commands = testbed
-                .setup_commands()
-                .await
-                .wrap_err("Failed to load testbed setup commands")?;
-
-            let protocol_commands = Protocol::new(&settings);
-            let node_parameters = match &settings.node_parameters_path {
-                Some(path) => {
-                    NodeParameters::load(path).wrap_err("Failed to load node's parameters")?
-                }
-                None => NodeParameters::default(),
-            };
-            let client_parameters = match &settings.client_parameters_path {
-                Some(path) => {
-                    ClientParameters::load(path).wrap_err("Failed to load client's parameters")?
-                }
-                None => ClientParameters::default(),
-            };
-
-            let set_of_benchmark_parameters = BenchmarkParameters::new_from_loads(
-                settings.clone(),
-                node_parameters,
-                client_parameters,
-                committee,
-                loads,
-            );
-
-            Orchestrator::new(
-                settings,
-                instances,
-                setup_commands,
-                protocol_commands,
-                ssh_manager,
-            )
-            .skip_testbed_update(skip_testbed_update)
-            .skip_testbed_configuration(skip_testbed_configuration)
-            .run_benchmarks(set_of_benchmark_parameters)
-            .await
-            .wrap_err("Failed to run benchmarks")?;
-        }
-
-        // Print a summary of the specified measurements collection.
-        Operation::Summarize { path } => MeasurementsCollection::load(path)?.display_summary(),
     }
     Ok(())
 }
