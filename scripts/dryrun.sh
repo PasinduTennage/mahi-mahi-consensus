@@ -3,7 +3,7 @@
 
 # bash run.sh
 output_dir=logs/local/
-rm -r ${output_dir} && mkdir -p ${output_dir}
+rm -r ${output_dir} ; mkdir -p ${output_dir}
 
 pkill -f mysticeti
 
