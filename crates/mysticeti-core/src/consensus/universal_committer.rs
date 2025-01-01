@@ -1,8 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::VecDeque, sync::Arc};
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::Arc,
+};
 
 use super::{base_committer::BaseCommitter, LeaderStatus, DEFAULT_WAVE_LENGTH};
 use crate::{
@@ -28,7 +30,11 @@ impl UniversalCommitter {
     /// Try to commit part of the dag. This function is idempotent and returns a list of
     /// ordered decided leaders.
     #[tracing::instrument(skip_all, fields(last_decided = % last_decided))]
-    pub fn try_commit(&mut self, last_decided: BlockReference, threshold_round: RoundNumber) -> Vec<LeaderStatus> {
+    pub fn try_commit(
+        &mut self,
+        last_decided: BlockReference,
+        threshold_round: RoundNumber,
+    ) -> Vec<LeaderStatus> {
         let highest_known_round = self.block_store.highest_round();
         if highest_known_round < self.wave_length {
             return Vec::new();
@@ -54,12 +60,18 @@ impl UniversalCommitter {
                 match self.previously_committed_leaders.get(&(leader, round)) {
                     Some(LeaderStatus::Commit(block)) => {
                         status = LeaderStatus::Commit(block.clone());
-                        tracing::debug!("Already Committed {}", format_authority_round(leader, round));
+                        tracing::debug!(
+                            "Already Committed {}",
+                            format_authority_round(leader, round)
+                        );
                         found = true;
                     }
                     Some(LeaderStatus::Skip(ai, rn)) => {
                         status = LeaderStatus::Skip(ai.clone(), rn.clone());
-                        tracing::debug!("Already Skipped {}", format_authority_round(leader, round));
+                        tracing::debug!(
+                            "Already Skipped {}",
+                            format_authority_round(leader, round)
+                        );
                         found = true;
                     }
                     Some(LeaderStatus::Undecided(ai, rn)) => {
@@ -72,9 +84,9 @@ impl UniversalCommitter {
 
                 if !found {
                     tracing::debug!(
-                    "Trying to decide {} with {committer}",
-                    format_authority_round(leader, round)
-                );
+                        "Trying to decide {} with {committer}",
+                        format_authority_round(leader, round)
+                    );
 
                     // Try to directly decide the leader.
                     status = committer.try_direct_decide(leader, round);
@@ -90,7 +102,8 @@ impl UniversalCommitter {
 
                     // if the status is COMMIT put it in the map
                     if status.is_decided() {
-                        self.previously_committed_leaders.insert((leader, round), status.clone());
+                        self.previously_committed_leaders
+                            .insert((leader, round), status.clone());
                     }
                 }
 

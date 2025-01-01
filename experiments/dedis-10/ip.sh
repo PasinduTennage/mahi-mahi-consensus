@@ -1,3 +1,6 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 cert="/home/pasindu/Pictures/pasindu"
 
 replica1_name=10.156.33.140

@@ -1,3 +1,6 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 wave_length=$1
 number_of_leaders=$2
 enable_pipelining=$3
