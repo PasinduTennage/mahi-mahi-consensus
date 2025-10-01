@@ -13,11 +13,11 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Check PR title
-        uses: amannn/action-semantic-pull-request@v5.5.2
+        uses: amannn/action-semantic-pull-request@v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Check editorconfig
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: pip install editorconfig-checker=="2.7.3"
       - run: ec
 
@@ -33,14 +33,14 @@ jobs:
     runs-on: ubuntu-latest
     name: Check spelling
     steps:
-      - uses: actions/checkout@v4
-      - uses: crate-ci/typos@v1.21.0
+      - uses: actions/checkout@v5
+      - uses: crate-ci/typos@v1.37.1
 
   license-headers:
     runs-on: ubuntu-latest
     name: Check license headers
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: cargo install licensesnip@1.5.0
       - run: licensesnip check
 
