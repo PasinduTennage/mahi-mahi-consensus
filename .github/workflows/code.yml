@@ -41,7 +41,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Detect Changes
         uses: dorny/paths-filter@v3.0.2
         id: diff
@@ -59,8 +59,8 @@ jobs:
     needs: diff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1.6.3
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2.0.13
         with:
           # do not check advisories on PRs to prevent sudden failure due to new announcement
           command: check bans licenses sources
@@ -70,8 +70,8 @@ jobs:
     needs: diff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1.6.3
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2.0.13
 
   test-coverage:
     name: Run all Rust tests and report coverage
@@ -83,8 +83,8 @@ jobs:
     env:
       RUSTC_BOOTSTRAP: 1
     steps:
-      - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2.7.3
+      - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2.8.1
         with:
           save-if: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
       - run: cargo install cargo-tarpaulin@0.30.0
@@ -92,7 +92,7 @@ jobs:
         run: cargo tarpaulin
         shell: bash
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: Coverage report
           path: tarpaulin-report.html
@@ -119,8 +119,8 @@ jobs:
     needs: diff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2.7.3
+      - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2.8.1
         with:
           save-if: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
       - run: cargo install cargo-sort@1.0.9
@@ -143,8 +143,8 @@ jobs:
     needs: diff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2.7.3
+      - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2.8.1
         with:
           save-if: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
       - name: Build Rust code
