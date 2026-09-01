@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    config::node_defaults::default_wave_length, consensus::{
+    config::node_defaults::default_wave_length,
+    consensus::{
         universal_committer::UniversalCommitterBuilder,
         LeaderStatus,
         DEFAULT_WAVE_LENGTH,
-    }, test_util::{build_dag, build_dag_layer, committee, test_metrics, TestBlockWriter}, types::BlockReference
+    },
+    test_util::{build_dag, build_dag_layer, committee, test_metrics, TestBlockWriter},
+    types::BlockReference,
 };
 
 /// Commit one leader. Done
@@ -16,7 +19,12 @@ fn direct_commit() {
     let committee = committee(4); // create committee of size 4.
 
     let mut block_writer = TestBlockWriter::new(&committee); // define block writer with committee
-    let references = build_dag(&committee, &mut block_writer, None, DEFAULT_WAVE_LENGTH*2+1);
+    let references = build_dag(
+        &committee,
+        &mut block_writer,
+        None,
+        DEFAULT_WAVE_LENGTH * 2 + 1,
+    );
     tracing::trace!("References: {:?}", references);
     // for i in 0..references.len() {
     //     tracing::trace!("i={}, a[i]={:?}, r[i]={:?}, d[i]={:?}", i, references[i].authority, references[i].round, references[i].digest);
@@ -27,9 +35,9 @@ fn direct_commit() {
         block_writer.into_block_store(),
         test_metrics(),
     )
-    .build(); // create a committer 
+    .build(); // create a committer
     let last_committed = BlockReference::new_test(0, 0); // nothing in the last committed history.
-    let threshold_round = DEFAULT_WAVE_LENGTH*2;
+    let threshold_round = DEFAULT_WAVE_LENGTH * 2;
     let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
 
@@ -48,7 +56,12 @@ fn idempotence() {
     let committee = committee(4);
 
     let mut block_writer = TestBlockWriter::new(&committee);
-    build_dag(&committee, &mut block_writer, None, DEFAULT_WAVE_LENGTH*2+1);
+    build_dag(
+        &committee,
+        &mut block_writer,
+        None,
+        DEFAULT_WAVE_LENGTH * 2 + 1,
+    );
 
     let mut committer = UniversalCommitterBuilder::new(
         committee.clone(),
@@ -59,8 +72,8 @@ fn idempotence() {
 
     // Commit one block.
     let last_committed = BlockReference::new_test(0, 0);
-    let threshold_round = DEFAULT_WAVE_LENGTH*2;
-    let committed = committer.try_commit(last_committed,threshold_round);
+    let threshold_round = DEFAULT_WAVE_LENGTH * 2;
+    let committed = committer.try_commit(last_committed, threshold_round);
 
     // Ensure we don't commit it again.
     let max = committed.into_iter().max().unwrap();
@@ -78,9 +91,10 @@ fn multiple_direct_commit() {
     let wave_length = DEFAULT_WAVE_LENGTH;
 
     let mut last_committed = BlockReference::new_test(0, 0);
-    for n in 1..=wave_length{ //shorten to test
+    for n in 1..=wave_length {
+        //shorten to test
         // println!("n: {:?}", n);
-        let enough_blocks = wave_length * (n + 1) - 1 ; // 11, 12, 13,...
+        let enough_blocks = wave_length * (n + 1) - 1; // 11, 12, 13,...
         let mut block_writer = TestBlockWriter::new(&committee);
         build_dag(&committee, &mut block_writer, None, enough_blocks);
         let mut committer = UniversalCommitterBuilder::new(
@@ -94,14 +108,14 @@ fn multiple_direct_commit() {
         // // if n % 5 == 0 {
         // //     counter += wave_length;
         // // }
-        let threshold_round = enough_blocks+1;
-        let sequence: Vec<LeaderStatus> = committer.try_commit(last_committed,threshold_round);
+        let threshold_round = enough_blocks + 1;
+        let sequence: Vec<LeaderStatus> = committer.try_commit(last_committed, threshold_round);
         tracing::info!("Commit sequence: {sequence:?}");
         assert_eq!(sequence.len(), 1);
 
-        let leader_round = n *wave_length; // leader round value will automatically calculate to wave.
-        // println!("leader_round value: {:?}", leader_round);
-        // println!("leader_round: {:?}", committee.elect_leader(leader_round));
+        let leader_round = n * wave_length; // leader round value will automatically calculate to wave.
+                                            // println!("leader_round value: {:?}", leader_round);
+                                            // println!("leader_round: {:?}", committee.elect_leader(leader_round));
 
         if let LeaderStatus::Commit(ref block) = sequence[0] {
             assert_eq!(block.author(), committee.elect_leader(leader_round));
@@ -121,8 +135,8 @@ fn direct_commit_late_call() {
     let committee = committee(4);
     let wave_length = DEFAULT_WAVE_LENGTH;
 
-    let n: u64 = wave_length*2;
-    let enough_blocks = wave_length * n+wave_length;
+    let n: u64 = wave_length * 2;
+    let enough_blocks = wave_length * n + wave_length;
     let mut block_writer = TestBlockWriter::new(&committee);
     build_dag(&committee, &mut block_writer, None, enough_blocks);
 
@@ -135,8 +149,8 @@ fn direct_commit_late_call() {
     .build();
 
     let last_committed = BlockReference::new_test(0, 0);
-    let threshold_round = enough_blocks+1;
-    let sequence = committer.try_commit(last_committed,threshold_round);
+    let threshold_round = enough_blocks + 1;
+    let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
 
     assert_eq!(sequence.len(), n as usize);
@@ -172,7 +186,7 @@ fn no_genesis_commit() {
 
         let threshold_value = wave_length;
         let last_committed = BlockReference::new_test(0, 0);
-        let sequence = committer.try_commit(last_committed,threshold_value);
+        let sequence = committer.try_commit(last_committed, threshold_value);
         tracing::info!("Commit sequence: {sequence:?}");
         assert!(sequence.is_empty());
     }
@@ -194,7 +208,7 @@ fn no_leader() {
     // Add enough blocks to reach the decision round of the first leader (but without the leader).
     let leader_round_1 = wave_length;
     let leader_1 = committee.elect_leader(leader_round_1);
-    
+
     let references_without_leader_1: Vec<_> = references
         .into_iter()
         .filter(|x| x.authority != leader_1)
@@ -224,9 +238,9 @@ fn no_leader() {
     .with_wave_length(wave_length)
     .build();
 
-    let threshold_round = decision_round_1+1;
+    let threshold_round = decision_round_1 + 1;
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed,threshold_round);
+    let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
 
     assert_eq!(sequence.len(), 1);
@@ -275,9 +289,9 @@ fn direct_skip() {
     .with_wave_length(wave_length)
     .build();
 
-    let threshold_round = decision_round_1+1;
+    let threshold_round = decision_round_1 + 1;
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed,threshold_round);
+    let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
 
     assert_eq!(sequence.len(), 1);
@@ -355,7 +369,7 @@ fn indirect_commit() {
     ));
 
     // Add enough blocks to decide the 2nd leader.
-    let decision_round_3 = 3 * wave_length ;
+    let decision_round_3 = 3 * wave_length;
     build_dag(
         &committee,
         &mut block_writer,
@@ -371,9 +385,9 @@ fn indirect_commit() {
     )
     .with_wave_length(wave_length)
     .build();
-    let threshold_round = decision_round_3+1;
+    let threshold_round = decision_round_3 + 1;
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed,threshold_round);
+    let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
     assert_eq!(sequence.len(), 2);
 
@@ -431,7 +445,7 @@ fn commit_with_booster() {
     ));
 
     // Add enough blocks to reach the decision round of the 3rd leader.
-    let decision_round_3 = 4 * wave_length+1;
+    let decision_round_3 = 4 * wave_length + 1;
     build_dag(
         &committee,
         &mut block_writer,
@@ -450,7 +464,7 @@ fn commit_with_booster() {
 
     let threshold_round = decision_round_3;
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed,threshold_round);
+    let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
     // println!("sequence length: {:?}", sequence.len());
     assert_eq!(sequence.len(), 3);
@@ -509,7 +523,10 @@ fn commit_single_link_leader_with_booster() {
         .map(|authority| (authority, references_without_leader_1.clone()))
         .collect();
 
-    let connections: std::iter::Chain<std::vec::IntoIter<(u64, Vec<BlockReference>)>, std::vec::IntoIter<(u64, Vec<BlockReference>)>> = leader_connection.into_iter().chain(non_leader_connections);
+    let connections: std::iter::Chain<
+        std::vec::IntoIter<(u64, Vec<BlockReference>)>,
+        std::vec::IntoIter<(u64, Vec<BlockReference>)>,
+    > = leader_connection.into_iter().chain(non_leader_connections);
     let references = build_dag_layer(connections.collect(), &mut block_writer);
 
     // Add enough blocks to reach the decision round of the first leader.
@@ -530,9 +547,9 @@ fn commit_single_link_leader_with_booster() {
     .with_wave_length(wave_length)
     .build();
 
-    let threshold_round=wave_length;
+    let threshold_round = wave_length;
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed,threshold_round);
+    let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
     assert!(sequence.is_empty());
 }
@@ -585,10 +602,10 @@ fn undecided() {
     )
     .with_wave_length(wave_length)
     .build();
-    let threshold_round=decision_round_1+1;
+    let threshold_round = decision_round_1 + 1;
 
     let last_committed = BlockReference::new_test(0, 0);
-    let sequence = committer.try_commit(last_committed,threshold_round);
+    let sequence = committer.try_commit(last_committed, threshold_round);
     tracing::info!("Commit sequence: {sequence:?}");
     assert!(sequence.is_empty());
 }

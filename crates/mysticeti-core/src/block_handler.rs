@@ -11,8 +11,11 @@ use std::{
 
 use minibytes::Bytes;
 use parking_lot::Mutex;
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::{
+    mpsc,
+    mpsc::{Receiver, Sender},
+};
+
 use crate::{
     block_store::BlockStore,
     committee::{Committee, ProcessedTransactionHandler, QuorumThreshold, TransactionAggregator},
@@ -20,7 +23,7 @@ use crate::{
     data::Data,
     log::TransactionLog,
     metrics::{Metrics, UtilizationTimerExt, UtilizationTimerVecExt},
-    runtime::{self, TimeInstant},
+    runtime::{self, timestamp_utc, TimeInstant},
     syncer::CommitObserver,
     transactions_generator::TransactionGenerator,
     types::{
@@ -32,7 +35,6 @@ use crate::{
         TransactionLocator,
     },
 };
-use crate::runtime::timestamp_utc;
 
 pub trait BlockHandler: Send + Sync {
     fn handle_blocks(
@@ -358,7 +360,13 @@ impl<H: ProcessedTransactionHandler<TransactionLocator> + Default> TestCommitHan
         metrics: Arc<Metrics>,
         authority: AuthorityIndex,
     ) -> Self {
-        Self::new_with_handler(committee, transaction_time, metrics, Default::default(), authority)
+        Self::new_with_handler(
+            committee,
+            transaction_time,
+            metrics,
+            Default::default(),
+            authority,
+        )
     }
 }
 
@@ -475,7 +483,7 @@ impl<H: ProcessedTransactionHandler<TransactionLocator>> TestCommitHandler<H> {
 }
 
 impl<H: ProcessedTransactionHandler<TransactionLocator> + Send + Sync> CommitObserver
-for TestCommitHandler<H>
+    for TestCommitHandler<H>
 {
     fn handle_commit(
         &mut self,

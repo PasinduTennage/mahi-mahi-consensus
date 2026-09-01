@@ -98,7 +98,7 @@ impl Validator {
             block_handler.transaction_time.clone(),
             metrics.clone(),
             committed_transaction_log,
-            authority
+            authority,
         );
         let core = Core::open(
             block_handler,
