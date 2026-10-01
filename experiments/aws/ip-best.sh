@@ -1,3 +1,6 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 cert="/home/ubuntu/Pictures/pasindu"
 username=ubuntu
 replica1_name=3.145.165.189

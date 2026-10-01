@@ -38,7 +38,7 @@ pub struct Committee {
     pub authorities: Vec<Authority>,
     validity_threshold: Stake, // The minimum stake required for validity
     quorum_threshold: Stake,   // The minimum stake required for quorum
-    skip_threshold: Stake, // The minimum stake required to skip a transaction
+    skip_threshold: Stake,     // The minimum stake required to skip a transaction
 }
 
 impl Committee {
@@ -137,8 +137,6 @@ impl Committee {
     pub fn is_non_zero(&self, amount: Stake) -> bool {
         amount > self.skip_threshold
     }
-
-
 
     pub fn get_total_stake<A: Borrow<AuthorityIndex>>(&self, authorities: &HashSet<A>) -> Stake {
         let mut total_stake = 0;

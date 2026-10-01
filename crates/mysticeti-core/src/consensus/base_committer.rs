@@ -6,7 +6,7 @@ use std::{fmt::Display, sync::Arc};
 use super::{LeaderStatus, DEFAULT_WAVE_LENGTH};
 use crate::{
     block_store::BlockStore,
-    committee::{Committee, QuorumThreshold, StakeAggregator, SkipThreshold},
+    committee::{Committee, QuorumThreshold, SkipThreshold, StakeAggregator},
     consensus::MINIMUM_WAVE_LENGTH,
     data::Data,
     types::{format_authority_round, AuthorityIndex, BlockReference, RoundNumber, StatementBlock},
@@ -108,7 +108,8 @@ impl BaseCommitter {
         (author, round): (AuthorityIndex, RoundNumber),
         from: &Data<StatementBlock>,
     ) -> Option<BlockReference> {
-        if from.round() <= round { // minor fix
+        if from.round() <= round {
+            // minor fix
             return None;
         }
         for include in from.includes() {
@@ -215,8 +216,15 @@ impl BaseCommitter {
     }
 
     /// Check whether the specified leader has 0 votes from the voting round
-    fn can_skip_leader(&self, voting_round: RoundNumber, leader: AuthorityIndex, leader_round: RoundNumber) -> bool {
-        let leader_blocks = self.block_store.get_blocks_at_authority_round(leader, leader_round);
+    fn can_skip_leader(
+        &self,
+        voting_round: RoundNumber,
+        leader: AuthorityIndex,
+        leader_round: RoundNumber,
+    ) -> bool {
+        let leader_blocks = self
+            .block_store
+            .get_blocks_at_authority_round(leader, leader_round);
         let voting_blocks = self.block_store.get_blocks_by_round(voting_round);
 
         // check if there are enough blocks in the voting round
@@ -235,7 +243,7 @@ impl BaseCommitter {
             return false;
         }
 
-        // if lenth of leader_blocks is 0, then return true
+        // if length of leader_blocks is 0, then return true
         if leader_blocks.len() == 0 {
             return true;
         }
@@ -247,7 +255,9 @@ impl BaseCommitter {
                     tracing::trace!(
                         "[{self}] {voting_block:?} is not a vote for leader {leader_block:?}"
                     );
-                    if skip_stake_aggregator.add(voting_block.reference().authority, &self.committee) {
+                    if skip_stake_aggregator
+                        .add(voting_block.reference().authority, &self.committee)
+                    {
                         return true;
                     }
                 }
@@ -290,7 +300,7 @@ impl BaseCommitter {
         &self,
         leader: AuthorityIndex,
         leader_round: RoundNumber,
-        leaders: impl Iterator<Item=&'a LeaderStatus>,
+        leaders: impl Iterator<Item = &'a LeaderStatus>,
     ) -> LeaderStatus {
         // The anchor is the first committed leader with round higher than the decision round of the
         // target leader. We must stop the iteration upon encountering an undecided leader.
