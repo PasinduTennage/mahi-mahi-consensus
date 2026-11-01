@@ -1,3 +1,6 @@
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 if [ -z "$1" ]; then
     echo "Usage: $0 <path_to_ip.sh>"
     exit 1

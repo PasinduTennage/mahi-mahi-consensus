@@ -1,9 +1,9 @@
 # Mahi-Mahi Asynchronous Consensus Protocol
 
-Mahi-Mahi is a high-throughput asynchronous consensus protocol 
+Mahi-Mahi is a high-throughput asynchronous consensus protocol
 designed to provide efficient and scalable distributed consensus
-with low-latency. 
-It achieves consensus in **4 network hops** and utilizes 
+with low-latency.
+It achieves consensus in **4 network hops** and utilizes
 a **Directed Acyclic Graph (DAG)** structure,
 offering superior performance in decentralized systems.
 
@@ -20,7 +20,7 @@ Mahi-Mahi offers significant improvements over existing consensus algorithms:
 
 ## Getting Started:
 
-To run Mahi-Mahi in a single machine: 
+To run Mahi-Mahi in a single machine:
 ```/bin/bash scripts/dryrun.sh```
 
 

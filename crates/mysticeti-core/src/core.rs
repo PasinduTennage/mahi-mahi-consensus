@@ -5,12 +5,15 @@ use std::{
     collections::{HashSet, VecDeque},
     mem,
     sync::{atomic::AtomicU64, Arc},
+    time::Duration,
 };
-use std::time::Duration;
-use rand::Rng;
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::{Sender, Receiver};
+
 use minibytes::Bytes;
+use rand::Rng;
+use tokio::sync::{
+    mpsc,
+    mpsc::{Receiver, Sender},
+};
 
 use crate::{
     block_handler::BlockHandler,
@@ -147,12 +150,10 @@ impl<H: BlockHandler> Core<H> {
             "Number of leaders: {}",
             public_config.parameters.number_of_leaders
         );
-        tracing::info!(
-            "Wave length: {}",
-            public_config.parameters.wave_length
-        );
+        tracing::info!("Wave length: {}", public_config.parameters.wave_length);
 
-        let (tx, mut rx): (Sender<(u128, u128, usize)>, Receiver<(u128, u128, usize)>) = mpsc::channel(10000);
+        let (tx, mut rx): (Sender<(u128, u128, usize)>, Receiver<(u128, u128, usize)>) =
+            mpsc::channel(10000);
 
         let mut this = Self {
             block_manager,
@@ -335,7 +336,6 @@ impl<H: BlockHandler> Core<H> {
         Some(block)
     }
 
-
     pub fn wal_syncer(&self) -> WalSyncer {
         self.wal_writer
             .syncer()
@@ -407,7 +407,7 @@ impl<H: BlockHandler> Core<H> {
         // Leader round we check if we have a leader block
         if quorum_round > self.last_commit_leader.round().max(period - 1) {
             let leader_round = quorum_round - 1;
-            let mut leaders:Vec<_>= self.committee.authorities().map(|i|i).collect() ;// // self.committer.get_leaders(leader_round);
+            let mut leaders: Vec<_> = self.committee.authorities().map(|i| i).collect(); // // self.committer.get_leaders(leader_round);
             leaders.retain(|leader| connected_authorities.contains(leader));
             self.block_store
                 .all_blocks_exists_at_authority_round(&leaders, leader_round)

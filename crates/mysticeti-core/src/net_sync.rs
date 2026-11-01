@@ -171,7 +171,7 @@ impl<H: BlockHandler + 'static, C: CommitObserver + 'static> NetworkSyncer<H, C>
                 .into_values()
                 .chain([leader_timeout_task, cleanup_task].into_iter()),
         )
-            .await;
+        .await;
         Arc::try_unwrap(block_fetcher)
             .unwrap_or_else(|_| panic!("Failed to drop all connections"))
             .shutdown()
